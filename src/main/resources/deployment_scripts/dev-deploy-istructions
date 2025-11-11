@@ -1,0 +1,5 @@
+# 1. Start development environment
+./deploy-dev.sh
+
+# 2. Or run with Docker Compose directly
+docker-compose up --build

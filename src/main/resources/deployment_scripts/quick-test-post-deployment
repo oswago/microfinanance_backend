@@ -1,0 +1,8 @@
+# Test the application
+curl http://localhost:8080/api/health
+
+# Test database connection
+curl http://localhost:8080/api/system/settings
+
+# View logs
+docker-compose logs -f app

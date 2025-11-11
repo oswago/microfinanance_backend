@@ -1,0 +1,73 @@
+# src/main/resources/application.yml
+spring:
+  datasource:
+    url: jdbc:h2:mem:microfinancedb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        trace: false
+        web-allow-others: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  error:
+    include-stacktrace: always
+    include-message: always
+
+logging:
+  level:
+    com.microfinance: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type: TRACE
+  file:
+    name: logs/microfinance-dev.log
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:defaultDevelopmentSecretKeyForMicrofinance2024ChangeInProduction}
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+      mfa-expiration: 300000
+    rate-limit:
+      login-attempts: 5
+      window-minutes: 1
+    file-download:
+      enabled: true
+      token-expiry-minutes: 30
+  system:
+    company-name: "Microfinance System - Development"
+  file:
+    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+    max-size: ${MAX_FILE_SIZE:5242880} # 5MB in bytes
+    allowed-types: image/jpeg,image/png,image/jpg,image/gif,application/pdf
+    base-url: ${FILE_BASE_URL:http://localhost:8080/files}
+
+
+

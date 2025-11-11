@@ -1,0 +1,1 @@
+package com.microfinance.loanapplications.entity; public class LoanApplication {}

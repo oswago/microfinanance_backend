@@ -1,0 +1,106 @@
+-- Clear tables first to avoid conflicts
+DELETE FROM holiday_calendar;
+DELETE FROM number_sequences;
+DELETE FROM currency_settings;
+DELETE FROM branches;
+DELETE FROM system_settings;
+DELETE FROM role_permissions;
+DELETE FROM users;
+
+-- Insert default admin user (password: admin123)
+INSERT INTO users (username, email, password, first_name, last_name, role, active, created_at, failed_login_attempts)
+VALUES (
+    'admin',
+    'admin@microfinance.com',
+    '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+    'System',
+    'Administrator',
+    'SUPER_ADMIN',
+    true,
+    CURRENT_TIMESTAMP,
+    0
+);
+
+-- Insert sample loan officer (password: officer123)
+INSERT INTO users (username, email, password, first_name, last_name, role, active, created_at, failed_login_attempts)
+VALUES (
+    'officer1',
+    'officer1@microfinance.com',
+    '$2a$12$4R1J7Q8eN9S0A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V',
+    'John',
+    'Doe',
+    'LOAN_OFFICER',
+    true,
+    CURRENT_TIMESTAMP,
+    0
+);
+
+-- Insert sample credit approver (password: approver123)
+INSERT INTO users (username, email, password, first_name, last_name, role, active, created_at, failed_login_attempts)
+VALUES (
+    'approver1',
+    'approver1@microfinance.com',
+    '$2a$12$W1X2Y3Z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q1R2S3T4U5V6W7X',
+    'Jane',
+    'Smith',
+    'CREDIT_APPROVER',
+    true,
+    CURRENT_TIMESTAMP,
+    0
+);
+
+-- Insert role permissions for SUPER_ADMIN
+INSERT INTO role_permissions (role, permission, description) VALUES
+('SUPER_ADMIN', 'USER_CREATE', 'Create users'),
+('SUPER_ADMIN', 'USER_READ', 'View users'),
+('SUPER_ADMIN', 'USER_UPDATE', 'Update users'),
+('SUPER_ADMIN', 'USER_DELETE', 'Delete users'),
+('SUPER_ADMIN', 'BORROWER_CREATE', 'Create borrowers'),
+('SUPER_ADMIN', 'BORROWER_READ', 'View borrowers'),
+('SUPER_ADMIN', 'BORROWER_UPDATE', 'Update borrowers'),
+('SUPER_ADMIN', 'BORROWER_DELETE', 'Delete borrowers');
+
+-- Insert role permissions for LOAN_OFFICER
+INSERT INTO role_permissions (role, permission, description) VALUES
+('LOAN_OFFICER', 'BORROWER_CREATE', 'Create borrowers'),
+('LOAN_OFFICER', 'BORROWER_READ', 'View borrowers'),
+('LOAN_OFFICER', 'BORROWER_UPDATE', 'Update borrowers'),
+('LOAN_OFFICER', 'APPLICATION_CREATE', 'Create loan applications');
+
+-- Insert role permissions for CREDIT_APPROVER
+INSERT INTO role_permissions (role, permission, description) VALUES
+('CREDIT_APPROVER', 'APPLICATION_READ', 'View loan applications'),
+('CREDIT_APPROVER', 'APPLICATION_APPROVE', 'Approve/reject loan applications');
+
+-- Insert default system settings (include auto_backup_enabled)
+INSERT INTO system_settings (id, default_interest_calculation_method, default_interest_rate, default_penalty_rate,
+                           default_penalty_grace_period_days, company_name, default_currency, mfa_enabled,
+                           auto_backup_enabled, created_at, updated_at)
+VALUES (1, 'REDUCING_BALANCE', 12.5, 2.0, 7, 'Microfinance System', 'USD', true, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Insert default branches
+INSERT INTO branches (code, name, type, address, phone, active, created_at, updated_at)
+VALUES
+('HO-001', 'Head Office', 'HEAD_OFFICE', '123 Main Street, City', '+1-555-0101', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('BR-001', 'Downtown Branch', 'BRANCH', '456 Downtown Ave, City', '+1-555-0102', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Insert default currencies
+INSERT INTO currency_settings (currency_code, currency_name, symbol, exchange_rate, default_value, active, created_at, updated_at)
+VALUES
+('USD', 'US Dollar', '$', 1.0, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('EUR', 'Euro', '€', 0.85, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('GBP', 'British Pound', '£', 0.73, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Insert default number sequences
+INSERT INTO number_sequences (sequence_code, description, prefix, suffix, next_value, padding, reset_daily, reset_monthly, reset_yearly, active, created_at, updated_at)
+VALUES
+('LOAN_APP', 'Loan Application Number', 'LA-', '', 1, 6, false, false, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('BORROWER', 'Borrower ID', 'BOR-', '', 1, 6, false, false, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('PAYMENT', 'Payment Receipt', 'PMT-', '', 1, 6, true, false, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+-- Insert default holidays
+INSERT INTO holiday_calendar (name, holiday_date, description, recurring, country_code, active)
+VALUES
+('New Year''s Day', '2024-01-01', 'New Year''s Day Celebration', true, 'US', true),
+('Christmas Day', '2024-12-25', 'Christmas Day Celebration', true, 'US', true);

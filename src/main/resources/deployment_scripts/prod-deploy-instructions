@@ -1,0 +1,9 @@
+# 1. Create .env file with production values
+cp .env.example .env
+# Edit .env with production values
+
+# 2. Deploy to production
+./deploy-prod.sh
+
+# 3. Or use Docker Compose directly
+docker-compose -f docker-compose.prod.yml --env-file .env up -d

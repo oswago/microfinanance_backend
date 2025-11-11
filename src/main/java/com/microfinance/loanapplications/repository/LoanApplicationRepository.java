@@ -1,0 +1,1 @@
+package com.microfinance.loanapplications.repository; public interface LoanApplicationRepository {}

@@ -1,5 +1,6 @@
 package com.microfinance.borrower.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microfinance.base.entity.BaseEntity;
 import com.microfinance.borrower.enums.KycWorkflowStep;
 import jakarta.persistence.*;
@@ -14,8 +15,13 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 public class KycWorkflowStepStatus extends BaseEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kyc_workflow_id", nullable = false)
+    @JsonIgnore  // Add this
     private KycWorkflow kycWorkflow;
 
     @Enumerated(EnumType.STRING)

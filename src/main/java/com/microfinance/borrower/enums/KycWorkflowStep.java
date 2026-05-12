@@ -15,14 +15,20 @@ public enum KycWorkflowStep {
     VERIFY_DOCUMENTS("Verify Documents", "Validate uploaded documents", 7,true),
     VERIFY_ADDRESS("Verify Address", "Confirm residential address", 8,true),
     VERIFY_INCOME("Verify Income", "Validate income sources", 9,true),
+
+    VERIFY_ID_PROOF("Verify identification documents","Verify identification documents",10,true),
+    VERIFY_ADDRESS_PROOF( "Verify address documents","Verify address documents",11,true),
+    VERIFY_INCOME_PROOF( "Verify income documents","Verify income documents",12,true),
+    VERIFY_PHOTOGRAPH("Verify photograph","Verify photograph",13,true),
+    // Add more as needed
     
     // Approval steps
-    RISK_ASSESSMENT("Risk Assessment", "Assess borrower risk level", 10,true),
-    OFFICER_APPROVAL("Officer Approval", "Loan officer review and approval", 11,true),
-    MANAGER_APPROVAL("Manager Approval", "Branch manager final approval", 12,true),
+    RISK_ASSESSMENT("Risk Assessment", "Assess borrower risk level", 14,true),
+    OFFICER_APPROVAL("Officer Approval", "Loan officer review and approval", 15,true),
+    MANAGER_APPROVAL("Manager Approval", "Branch manager final approval", 16,true),
     
     // Completion steps
-    KYC_COMPLETION("KYC Completion", "Finalize KYC process", 13,true);
+    KYC_COMPLETION("KYC Completion", "Finalize KYC process", 17,true);
 
     private final String displayName;
     private final String description;

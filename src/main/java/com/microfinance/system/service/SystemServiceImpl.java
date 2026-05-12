@@ -1,8 +1,10 @@
 package com.microfinance.system.service;
 
+import com.microfinance.base.entity.User;
 import com.microfinance.system.dto.BranchRequest;
 import com.microfinance.system.entity.*;
 import com.microfinance.system.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -180,6 +182,22 @@ public class SystemServiceImpl implements SystemService {
     @Transactional(readOnly = true)
     public List<Branch> getBranchesByType(Branch.BranchType type) {
         return branchRepository.findByTypeAndActiveTrue(type);
+    }
+
+    public Branch getBranchForUser(User user) {
+        if (user == null || user.getBranchId() == null) {
+            return getDefaultBranch();
+        }
+
+        return branchRepository.findById(user.getBranchId())
+                .orElseGet(this::getDefaultBranch);
+    }
+
+    public Branch getDefaultBranch() {
+        return branchRepository.findById(1L)
+                .orElseGet(() -> branchRepository.findAll().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new EntityNotFoundException("No branches found")));
     }
     
     // Currency Management Methods

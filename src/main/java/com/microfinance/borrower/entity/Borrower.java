@@ -1,14 +1,16 @@
 package com.microfinance.borrower.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microfinance.base.entity.BaseEntity;
+import com.microfinance.common.config.GeneralConfig;
+import com.microfinance.loanproducts.entity.LoanProduct;
 import com.microfinance.system.entity.Branch;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,9 +19,21 @@ import java.util.List;
 
 @Entity
 @Table(name = "borrowers")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString(exclude = {
+        "documents", "guarantors", "kycWorkflows", "documentVerifications",
+        "eligibleLoanProducts", "preferredLoanProducts", "productPreferences"
+})
+@EqualsAndHashCode(callSuper = true, exclude = {
+        "documents", "guarantors", "kycWorkflows", "documentVerifications",
+        "eligibleLoanProducts", "preferredLoanProducts", "productPreferences"
+})
+
 public class Borrower extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     @NotBlank
     @Column(name = "borrower_number", unique = true)
@@ -35,7 +49,7 @@ public class Borrower extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    private Gender gender;
+    private GeneralConfig.Gender gender;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
@@ -57,7 +71,7 @@ public class Borrower extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    private MaritalStatus maritalStatus;
+    private GeneralConfig.MaritalStatus maritalStatus;
 
     private String occupation;
     private String employer;
@@ -65,11 +79,11 @@ public class Borrower extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    private BorrowerStatus status = BorrowerStatus.ACTIVE;
+    private GeneralConfig.BorrowerStatus status = GeneralConfig.BorrowerStatus.ACTIVE;
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    private KycStatus kycStatus = KycStatus.PENDING;
+    private GeneralConfig.KycStatus kycStatus = GeneralConfig.KycStatus.PENDING;
 
     @Column(name = "kyc_verified_at")
     private LocalDateTime kycVerifiedAt;
@@ -79,11 +93,25 @@ public class Borrower extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
+    @JsonIgnore
     private Branch branch;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
+    @JsonIgnore
     private BorrowerGroup group;
+
+    // === ADD PRODUCT TYPE RELATIONSHIP ===
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loan_product_id")
+    @JsonIgnore
+    private LoanProduct loanProduct; // Default/preferred product type
+
+    // Alternatively, if you want to store just the ID (no relationship):
+    // @Column(name = "product_type_id")
+    // private Long productTypeId;
+
+    private String idNumber;
 
     @Column(name = "created_by")
     private Long createdBy;
@@ -102,28 +130,154 @@ public class Borrower extends BaseEntity {
     private String notes;
 
     @OneToMany(mappedBy = "borrower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<BorrowerDocument> documents = new ArrayList<>();
 
     @OneToMany(mappedBy = "borrower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<BorrowerGuarantor> guarantors = new ArrayList<>();
 
-    public String getFullName() {
-        if (middleName != null && !middleName.isEmpty()) {
-            return firstName + " " + middleName + " " + lastName;
-        }
-        return firstName + " " + lastName;
+    // === NEW: LOAN PRODUCT RELATIONSHIPS ===
+
+    // Many-to-Many: Borrower eligibility for loan products
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "borrower_eligible_products",
+            joinColumns = @JoinColumn(name = "borrower_id"),
+            inverseJoinColumns = @JoinColumn(name = "loan_product_id")
+    )
+    @JsonIgnore
+    private List<LoanProduct> eligibleLoanProducts = new ArrayList<>();
+
+    // Many-to-Many: Borrower's preferred loan products
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "borrower_preferred_products",
+            joinColumns = @JoinColumn(name = "borrower_id"),
+            inverseJoinColumns = @JoinColumn(name = "loan_product_id")
+    )
+    @JsonIgnore
+    private List<LoanProduct> preferredLoanProducts = new ArrayList<>();
+
+    // One-to-Many: Borrower's product preferences/history
+    @OneToMany(mappedBy = "borrower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<BorrowerProductPreference> productPreferences = new ArrayList<>();
+
+    // === EXISTING RELATIONSHIPS ===
+    @OneToMany(mappedBy = "borrower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<KycWorkflow> kycWorkflows = new ArrayList<>();
+
+    @OneToMany(mappedBy = "borrower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<DocumentVerification> documentVerifications = new ArrayList<>();
+
+    // === HELPER METHODS FOR LOAN PRODUCTS ===
+
+    public boolean isEligibleForProduct(LoanProduct product) {
+        return eligibleLoanProducts != null && eligibleLoanProducts.contains(product);
     }
 
+    public boolean hasPreferredProduct(LoanProduct product) {
+        return preferredLoanProducts != null && preferredLoanProducts.contains(product);
+    }
+
+    public void addEligibleProduct(LoanProduct product) {
+        if (eligibleLoanProducts == null) {
+            eligibleLoanProducts = new ArrayList<>();
+        }
+        if (!eligibleLoanProducts.contains(product)) {
+            eligibleLoanProducts.add(product);
+        }
+    }
+
+    public void addPreferredProduct(LoanProduct product) {
+        if (preferredLoanProducts == null) {
+            preferredLoanProducts = new ArrayList<>();
+        }
+        if (!preferredLoanProducts.contains(product)) {
+            preferredLoanProducts.add(product);
+        }
+    }
+
+    public void removeEligibleProduct(LoanProduct product) {
+        if (eligibleLoanProducts != null) {
+            eligibleLoanProducts.remove(product);
+        }
+    }
+
+    public void removePreferredProduct(LoanProduct product) {
+        if (preferredLoanProducts != null) {
+            preferredLoanProducts.remove(product);
+        }
+    }
+
+    // === HELPER METHOD FOR PRODUCT TYPE ===
+    public Long getLoanProductId() {
+        return loanProduct != null ? loanProduct.getId() : null;
+    }
+
+    public String getLoanProductName() {
+        return loanProduct != null ? loanProduct.getName() : null;
+    }
+
+    public String getLoanProductCode() {
+        return loanProduct != null ? loanProduct.getProductCode() : null;
+    }
+
+    // Get recommended products based on borrower profile and product type
+    public List<LoanProduct> getRecommendedProducts() {
+        List<LoanProduct> recommended = new ArrayList<>();
+
+        if (eligibleLoanProducts != null) {
+            // Filter based on borrower profile, preferences, and product type
+            for (LoanProduct product : eligibleLoanProducts) {
+                if (isProductRecommended(product)) {
+                    recommended.add(product);
+                }
+            }
+        }
+
+        return recommended;
+    }
+
+    private boolean isProductRecommended(LoanProduct product) {
+        // Business logic for product recommendation
+        if (loanProduct != null && product.getProductType() != null) {
+            // First check if product matches the preferred product type
+            if (!product.getProductType().getId().equals(loanProduct.getId())) {
+                return false;
+            }
+        }
+
+        if (monthlyIncome != null && product.getMinLoanAmount() != null) {
+            // Recommend products where loan amount is affordable
+            double affordableAmount = monthlyIncome * 0.3; // 30% of monthly income
+            return product.getMinLoanAmount().doubleValue() <= affordableAmount;
+        }
+        return true;
+    }
+
+
     @Enumerated(EnumType.STRING)
-    private ClientType clientType = ClientType.INDIVIDUAL; // INDIVIDUAL, GROUP, SME
+    private GeneralConfig.ClientType clientType = GeneralConfig.ClientType.INDIVIDUAL;
 
     @Column(name = "registration_date")
     private LocalDate registrationDate;
 
-    private String referralSource; // How they heard about MFI
-    private String businessType; // For business loans
+    private Long assignedOfficerId;
+
+    private String referralSource;
+    private String businessType;
     private String businessAddress;
     private Integer dependents;
+
+
+    // NEW FIELD - KYC Expiry Date
+    @Column(name = "kyc_expiry_date")
+    private LocalDate kycExpiryDate;
+
 
     // Credit scoring fields
     private Integer creditScore;
@@ -132,34 +286,39 @@ public class Borrower extends BaseEntity {
     // Group membership tracking
     private Boolean isGroupLeader = false;
 
+    private String alternatePhone;
+
+    private String physicalAddress;
+
     // Risk assessment
     @Enumerated(EnumType.STRING)
-    private RiskRating riskRating = RiskRating.LOW;
+    private GeneralConfig.RiskRating riskRating = GeneralConfig.RiskRating.LOW;
 
     // Additional contact info
     private String alternatePhoneNumber;
 
-    public enum ClientType {
-        INDIVIDUAL, GROUP_MEMBER, SME, CORPORATE
+    // === ADD SAFE toString() METHOD ===
+    @Override
+    public String toString() {
+        return "Borrower{" +
+                "id=" + id +
+                ", borrowerNumber='" + borrowerNumber + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", status=" + status +
+                ", kycStatus=" + kycStatus +
+                '}';
     }
 
-    public enum RiskRating {
-        LOW, MEDIUM, HIGH, VERY_HIGH
+    // === ADD SAFE getFullName() METHOD ===
+    public String getFullName() {
+        // Direct field access, no relationship traversal
+        if (middleName != null && !middleName.isEmpty()) {
+            return firstName + " " + middleName + " " + lastName;
+        }
+        return firstName + " " + lastName;
     }
 
-    public enum Gender {
-        MALE, FEMALE, OTHER
-    }
 
-    public enum MaritalStatus {
-        SINGLE, MARRIED, DIVORCED, WIDOWED
-    }
 
-    public enum BorrowerStatus {
-        ACTIVE, INACTIVE, BLACKLISTED, DECEASED
-    }
-
-    public enum KycStatus {
-        PENDING, VERIFIED, REJECTED, EXPIRED
-    }
 }

@@ -3,12 +3,18 @@ package com.microfinance.borrower.controller;
 import com.microfinance.borrower.dto.*;
 import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.borrower.entity.BorrowerDocument;
+import com.microfinance.borrower.enums.KycWorkflowStep;
 import com.microfinance.borrower.service.BorrowerDocumentService;
+import com.microfinance.borrower.service.KycWorkflowService;
 import com.microfinance.common.config.DocumentConfig;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.common.dto.DocumentTypeDto;
 import com.microfinance.common.dto.DocumentStatusDto;
 import com.microfinance.common.dto.ApiResponse;
 import com.microfinance.common.service.DocumentConfigService;
+import com.microfinance.common.util.CommonUtil;
+import com.microfinance.loanproducts.entity.LoanProduct;
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,10 +25,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.logging.log4j.MarkerManager.clear;
 
 @RestController
 @RequestMapping("/borrowers-doc")
@@ -31,6 +37,7 @@ public class BorrowerDocumentController {
 
     private final BorrowerDocumentService documentService;
     private final DocumentConfigService documentConfigService;
+    private final KycWorkflowService kycWorkflowService;
 
     //************************Document Management Endpoints**********************************************************/
 
@@ -239,18 +246,49 @@ public class BorrowerDocumentController {
         return ResponseEntity.ok(summary);
     }
 
+
     @GetMapping("/use-cases/{useCaseName}/required-documents")
-    public ResponseEntity<ApiResponse<Set<DocumentTypeDto>>> getRequiredDocumentsForUseCase(
-            @PathVariable String useCaseName) {
+    public ResponseEntity<ApiResponse<KycRequirementsDto>> getRequiredDocumentsForUseCase(
+            @PathVariable String useCaseName,
+            @RequestParam(required = false) Long borrowerId) {
         try {
-            Set<DocumentConfig.DocumentType> documentTypes = documentConfigService.getRequiredDocumentsForUseCase(useCaseName);
-            Set<DocumentTypeDto> dtos = documentTypes.stream()
-                    .map(documentType -> DocumentTypeDto.fromEntity(documentType)) // Use lambda instead
+            // Get required document types
+           // Set<DocumentConfig.DocumentType> documentTypes = documentConfigService.getRequiredDocumentsForUseCase(useCaseName);
+            Set<DocumentConfig.DocumentType> documentTypes = CommonUtil.getRequiredDocumentsForBorrower(borrowerId,useCaseName);
+
+            Set<DocumentTypeDto> documentDtos = documentTypes.stream()
+                    .map(DocumentTypeDto::fromEntity)
                     .collect(Collectors.toSet());
-            return ResponseEntity.ok(ApiResponse.success("Documents retrieved successfully", dtos));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Invalid use case: " + useCaseName));
+
+            // Get corresponding workflow steps WITH STATUS if borrowerId provided
+            Set<KycWorkflowStepStatusDto> stepDtos;
+            if (borrowerId != null) {
+                // Get steps with actual status from existing workflow
+                stepDtos = kycWorkflowService.getWorkflowStepsForDocumentTypesWithStatus(documentTypes, borrowerId);
+
+                // ⚠️ DEBUG: Check what we're actually getting
+                System.out.println("=== CONTROLLER DEBUG ===");
+                System.out.println("Step DTOs size: " + stepDtos.size());
+                if (!stepDtos.isEmpty()) {
+                    KycWorkflowStepStatusDto firstStep = stepDtos.iterator().next();
+                    System.out.println("First step class: " + firstStep.getClass().getName());
+                    System.out.println("First step: " + firstStep);
+                }
+            } else {
+                // Get static step definitions (fallback)
+                Set<KycWorkflowStep> workflowSteps = kycWorkflowService.getWorkflowStepsForDocumentTypes(documentTypes);
+                stepDtos = workflowSteps.stream()
+                        .map(step -> kycWorkflowService.createDefaultStepStatusDto(step, null))
+                        .collect(Collectors.toSet());
+            }
+
+            KycRequirementsDto response = new KycRequirementsDto(documentDtos, stepDtos);
+            return ResponseEntity.ok(ApiResponse.success("KYC requirements retrieved successfully", response));
+        } catch (Exception e) {
+            System.err.println("=== ERROR in controller: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error: " + e.getMessage()));
         }
     }
 
@@ -301,7 +339,6 @@ public class BorrowerDocumentController {
     }
 
     @GetMapping("/types/category/{category}")
-
     public ResponseEntity<ApiResponse<List<DocumentTypeDto>>> getDocumentTypesByCategory(
             @PathVariable String category) {
         try {
@@ -317,7 +354,6 @@ public class BorrowerDocumentController {
     }
 
     @GetMapping("/all/statuses")
-
     public ResponseEntity<ApiResponse<List<DocumentStatusDto>>> getAllDocumentStatuses() {
         try {
             List<DocumentStatusDto> statuses = Arrays.stream(DocumentConfig.DocumentStatus.values())
@@ -338,7 +374,7 @@ public class BorrowerDocumentController {
     @GetMapping("/kyc/eligible-borrowers")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
     public ResponseEntity<List<BorrowerDto>> getBorrowersEligibleForKycUpdate(
-            @RequestParam(required = false) Borrower.KycStatus currentStatus,
+            @RequestParam(required = false) GeneralConfig.KycStatus currentStatus,
             @RequestParam(required = false) Boolean documentsUploaded) {
 
         List<BorrowerDto> eligibleBorrowers =

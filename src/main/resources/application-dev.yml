@@ -6,9 +6,9 @@ spring:
       max-request-size: 10MB
       enabled: true
   datasource:
-    url: jdbc:h2:mem:microfinancedb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:file:./data/microfinance_db;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE;MODE=PostgreSQL;DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     username: sa
-    password: password
+    password:
     driver-class-name: org.h2.Driver
   h2:
     console:
@@ -19,7 +19,7 @@ spring:
         web-allow-others: false
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         show_sql: true
@@ -47,6 +47,7 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type: TRACE
+    org.springframework.boot.context.config: DEBUG
   file:
     name: logs/microfinance-dev.log
 

@@ -1,80 +1,80 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
-  # Main Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: microfinance-app
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker,dev
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/microfinance
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - JWT_SECRET=mySuperSecretKeyForMicrofinanceDevelopment2024
-      - JWT_EXPIRATION=86400000
-      - JWT_REFRESH_EXPIRATION=604800000
-      - SMTP_USERNAME=${SMTP_USERNAME:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-    depends_on:
-      - postgres
-    networks:
-      - microfinance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    volumes:
-      - ./logs:/app/logs
-    restart: unless-stopped
-
-  # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: microfinance-postgres
     environment:
-      - POSTGRES_DB=microfinance
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_INITDB_ARGS=--encoding=UTF8
+      POSTGRES_DB: microfinance
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres-backups:/backups
     networks:
       - microfinance-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Redis for caching and rate limiting (optional)
   redis:
     image: redis:7-alpine
     container_name: microfinance-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - microfinance-network
+    command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: microfinance-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres123
+      JWT_SECRET: productionSecretKeyForMicrofinance2024ChangeMe
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microfinance-network
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend  # Adjust path to your Vue frontend
+    container_name: microfinance-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - microfinance-network
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
+  backend_uploads:
+  backend_logs:
 
 networks:
   microfinance-network:

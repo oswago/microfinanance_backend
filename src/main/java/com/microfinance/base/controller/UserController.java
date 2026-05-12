@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
+
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -25,6 +27,21 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/collection-officers")
+   // @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<User>> getCollectionOfficers() {
+        List<User> users = userService.getCollectionOfficers();
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/legal-officers")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BRANCH_MANAGER')")
+    public ResponseEntity<List<User>> getLegalOfficers() {
+        //log.info("Fetching legal officers");
+        List<User>  officers = userService.getUsersByRole(User.UserRole.LEGAL_OFFICER);
+        return ResponseEntity.ok(officers);
     }
 
     @GetMapping("/{id}")

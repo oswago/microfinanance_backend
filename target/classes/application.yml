@@ -1,10 +1,14 @@
-# src/main/resources/application.yml
 spring:
   datasource:
-    url: jdbc:h2:mem:microfinancedb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:file:./data/microfinance_db;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE;MODE=PostgreSQL;DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     username: sa
-    password: password
+    password:
     driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
   h2:
     console:
       enabled: true
@@ -12,24 +16,51 @@ spring:
       settings:
         trace: false
         web-allow-others: false
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         show_sql: true
         format_sql: true
         use_sql_comments: true
         dialect: org.hibernate.dialect.H2Dialect
-    defer-datasource-initialization: true
-  sql:
-    init:
-      mode: always
+        jdbc:
+          batch_size: 20
+          order_inserts: true
+          order_updates: true
+
   devtools:
     restart:
       enabled: true
     livereload:
       enabled: true
+
+  thymeleaf:
+    mode: HTML
+    encoding: UTF-8
+    prefix: classpath:/templates/email/
+    suffix: .html
+    cache: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+    protocol: smtp
+    default-encoding: UTF-8
+    test-connection: false
 
 server:
   port: 8080
@@ -44,7 +75,7 @@ logging:
     com.microfinance: DEBUG
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
-    org.hibernate.type: TRACE
+    org.springframework.mail: DEBUG
   file:
     name: logs/microfinance-dev.log
 
@@ -54,20 +85,18 @@ app:
       secret: ${JWT_SECRET:defaultDevelopmentSecretKeyForMicrofinance2024ChangeInProduction}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
-      mfa-expiration: 300000
     rate-limit:
       login-attempts: 5
       window-minutes: 1
-    file-download:
-      enabled: true
-      token-expiry-minutes: 30
+
   system:
-    company-name: "Microfinance System - Development"
+    company-name: "Finite System - Development"
+    default-use-case: "BASIC_KYC"
+
   file:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
-    max-size: ${MAX_FILE_SIZE:5242880} # 5MB in bytes
+    max-size: ${MAX_FILE_SIZE:5242880}
     allowed-types: image/jpeg,image/png,image/jpg,image/gif,application/pdf
     base-url: ${FILE_BASE_URL:http://localhost:8080/files}
 
-
-
+  base-url: http://localhost:8080

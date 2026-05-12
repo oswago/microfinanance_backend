@@ -6,6 +6,7 @@ import com.microfinance.borrower.entity.BorrowerDocument;
 import com.microfinance.borrower.service.BorrowerActivityService;
 import com.microfinance.borrower.service.BorrowerService;
 import com.microfinance.common.config.DocumentConfig;
+import com.microfinance.common.config.GeneralConfig;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,9 @@ import com.microfinance.base.utils.SecurityUtils;
 import java.time.LocalDate;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j  // ← Add this annotation
 @RestController
 @RequestMapping("/borrowers")
 @RequiredArgsConstructor
@@ -93,6 +97,12 @@ public class BorrowerController {
             Authentication authentication) {
         // Extract user ID from authentication
         Long createdBy = securityUtils.getCurrentUserId();
+        // Log incoming request
+        log.info("=== CREATE BORROWER REQUEST ===");
+        log.info("Endpoint: POST /api/borrowers");
+        log.info("Created By User ID: {}", createdBy);
+        log.info("Request Body - Borrower DTO: {}", borrowerDto);
+
         BorrowerDto createdBorrower = borrowerService.createBorrower(borrowerDto, createdBy);
         return ResponseEntity.ok(createdBorrower);
     }
@@ -118,7 +128,7 @@ public class BorrowerController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER')")
     public ResponseEntity<BorrowerDto> updateBorrowerStatus(
             @PathVariable Long id,
-            @RequestParam Borrower.BorrowerStatus status) {
+            @RequestParam GeneralConfig.BorrowerStatus status) {
         
         BorrowerDto updatedBorrower = borrowerService.updateBorrowerStatus(id, status);
         return ResponseEntity.ok(updatedBorrower);
@@ -128,7 +138,7 @@ public class BorrowerController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'CREDIT_APPROVER')")
     public ResponseEntity<BorrowerDto> updateKycStatus(
             @PathVariable Long id,
-            @RequestParam Borrower.KycStatus kycStatus,
+            @RequestParam GeneralConfig.KycStatus kycStatus,
             @RequestParam(required = false) String notes,
             Authentication authentication) {
         
@@ -232,7 +242,7 @@ public class BorrowerController {
     // KYC workflow
     @GetMapping("/{id}/kyc-summary")
     public ResponseEntity<BorrowerKycSummaryDto> getKycSummary(@PathVariable Long id) {
-        BorrowerKycSummaryDto summary = borrowerService.getKycSummary(id);
+        BorrowerKycSummaryDto summary = borrowerService.getBorrowerKycSummary(id);
         return ResponseEntity.ok(summary);
     }
 
@@ -294,8 +304,8 @@ public class BorrowerController {
     public ResponseEntity<List<BorrowerActivityDto.TimelineGroup>> getActivityTimeline(
             @PathVariable Long id,
             @RequestParam(defaultValue = "30") int days) {
-
-        List<BorrowerActivityDto.TimelineGroup> timeline = borrowerActivityService.getActivityTimeline(id, days);
+       // List<BorrowerActivityDto.TimelineGroup> timeline = borrowerActivityService.getActivityTimeline(id, days);
+        List<BorrowerActivityDto.TimelineGroup> timeline = borrowerService.getActivityTimeline(id, days);
         return ResponseEntity.ok(timeline);
     }
 
@@ -342,10 +352,117 @@ public class BorrowerController {
     @GetMapping("/bulk-kyc-eligible")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'CREDIT_APPROVER')")
     public ResponseEntity<List<BorrowerDto>> getBulkKycEligibleBorrowers(
-            @RequestParam(required = false) Borrower.KycStatus currentStatus,
+            @RequestParam(required = false) GeneralConfig.KycStatus currentStatus,
             @RequestParam(defaultValue = "false") Boolean documentsUploaded) {
 
         List<BorrowerDto> eligibleBorrowers = borrowerService.getBorrowersEligibleForKycUpdate(currentStatus, documentsUploaded);
         return ResponseEntity.ok(eligibleBorrowers);
     }
+
+
+    /**
+     * Get active loans for a borrower
+     */
+    @GetMapping("/{borrowerId}/active-loans")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<List<BorrowerActiveLoanDto>> getBorrowerActiveLoans(@PathVariable Long borrowerId) {
+        log.info("Fetching active loans for borrower ID: {}", borrowerId);
+        List<BorrowerActiveLoanDto> activeLoans = borrowerService.getBorrowerActiveLoans(borrowerId);
+        return ResponseEntity.ok(activeLoans);
+    }
+
+    /**
+     * Get loan history for a borrower
+     */
+    @GetMapping("/{borrowerId}/loan-history")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<List<BorrowerLoanHistoryDto>> getBorrowerLoanHistory(@PathVariable Long borrowerId) {
+        log.info("Fetching loan history for borrower ID: {}", borrowerId);
+        List<BorrowerLoanHistoryDto> loanHistory = borrowerService.getBorrowerLoanHistory(borrowerId);
+        return ResponseEntity.ok(loanHistory);
+    }
+
+    /**
+     * Get borrower statistics including active loan count
+     */
+    @GetMapping("/{borrowerId}/statistics")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<BorrowerStatisticsDto> getBorrowerStatistics(@PathVariable Long borrowerId) {
+        log.info("Fetching statistics for borrower ID: {}", borrowerId);
+        BorrowerStatisticsDto statistics = borrowerService.getBorrowerStatistics(borrowerId);
+        return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * Get paginated active loans for a borrower
+     */
+    @GetMapping("/{borrowerId}/active-loans/paginated")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<Page<BorrowerActiveLoanDto>> getBorrowerActiveLoansPaginated(
+            @PathVariable Long borrowerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "disbursementDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+
+        log.info("Fetching paginated active loans for borrower ID: {}", borrowerId);
+
+        Sort sort = sortDirection.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<BorrowerActiveLoanDto> activeLoans = borrowerService.getBorrowerActiveLoansPaginated(borrowerId, pageable);
+        return ResponseEntity.ok(activeLoans);
+    }
+
+    /**
+     * Get paginated loan history for a borrower
+     */
+    @GetMapping("/{borrowerId}/loan-history/paginated")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<Page<BorrowerLoanHistoryDto>> getBorrowerLoanHistoryPaginated(
+            @PathVariable Long borrowerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "disbursementDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+
+        log.info("Fetching paginated loan history for borrower ID: {}", borrowerId);
+
+        Sort sort = sortDirection.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<BorrowerLoanHistoryDto> loanHistory = borrowerService.getBorrowerLoanHistoryPaginated(borrowerId, pageable);
+        return ResponseEntity.ok(loanHistory);
+    }
+
+    /**
+     * Get borrower statistics with date range
+     */
+    @GetMapping("/{borrowerId}/statistics/range")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<BorrowerStatisticsDto> getBorrowerStatisticsByDateRange(
+            @PathVariable Long borrowerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("Fetching statistics for borrower ID: {} from {} to {}", borrowerId, startDate, endDate);
+
+        BorrowerStatisticsDto statistics = borrowerService.getBorrowerStatisticsByDateRange(borrowerId, startDate, endDate);
+        return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * Get summary of borrower's loans by status
+     */
+    @GetMapping("/{borrowerId}/loans/summary")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER', 'BRANCH_MANAGER', 'CREDIT_APPROVER')")
+    public ResponseEntity<BorrowerLoanSummaryDto> getBorrowerLoanSummary(@PathVariable Long borrowerId) {
+        log.info("Fetching loan summary for borrower ID: {}", borrowerId);
+        BorrowerLoanSummaryDto summary = borrowerService.getBorrowerLoanSummary(borrowerId);
+        return ResponseEntity.ok(summary);
+    }
+
+
 }

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Disbursement Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+        }
+        .confirmation-box {
+            background-color: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .amount {
+            font-size: 36px;
+            color: #2e7d32;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .icon {
+            font-size: 48px;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+        .details {
+            background-color: white;
+            border: 1px solid #c8e6c9;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .repayment-schedule {
+            background-color: #f1f8e9;
+            border: 1px solid #c5e1a5;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .important-notes {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🎉 Loan Disbursement Confirmed!</h1>
+</div>
+
+<div class="content">
+    <div class="confirmation-box">
+        <div class="icon">✅</div>
+        <h2>Congratulations!</h2>
+        <p>Your loan has been successfully disbursed.</p>
+        <div class="amount">
+            <span th:text="${'$' + #numbers.formatDecimal(amount, 0, 'COMMA', 2, 'POINT')}">$0.00</span>
+        </div>
+        <p>Funds have been transferred to your account.</p>
+    </div>
+
+    <h3>Transaction Details:</h3>
+
+    <div class="details">
+        <p><strong>Application Number:</strong> <span th:text="${applicationNumber}">N/A</span></p>
+        <p><strong>Disbursement Date:</strong> <span th:text="${#temporals.format(date, 'dd MMM yyyy')}">N/A</span></p>
+        <p><strong>Transaction Reference:</strong> DISB-<span th:text="${applicationNumber}">N/A</span>-<span th:text="${#temporals.format(date, 'yyyyMMdd')}">N/A</span></p>
+        <p><strong>Status:</strong> <span style="color: #4CAF50; font-weight: bold;">COMPLETED</span></p>
+    </div>
+
+    <div class="repayment-schedule">
+        <h4>📅 Repayment Information:</h4>
+        <ul>
+            <li><strong>First Payment Due:</strong> <span th:text="${#temporals.format(date.plusMonths(1), 'dd MMM yyyy')}">N/A</span></li>
+            <li><strong>Monthly Payment:</strong> To be confirmed in your loan agreement</li>
+            <li><strong>Payment Method:</strong> Auto-debit from your registered account</li>
+        </ul>
+        <p><em>Your detailed repayment schedule is available in your loan portal.</em></p>
+    </div>
+
+    <p>View your complete loan details and repayment schedule:</p>
+
+    <a th:href="${loanDetailsUrl}" class="button">View Loan Details</a>
+
+    <div class="important-notes">
+        <h4>⚠️ Important Information:</h4>
+        <ul>
+            <li>Please allow 2-3 business days for the funds to appear in your account</li>
+            <li>Keep a copy of this confirmation for your records</li>
+            <li>Ensure you have sufficient funds for your first repayment</li>
+            <li>Contact us immediately if you notice any discrepancies</li>
+        </ul>
+    </div>
+
+    <h4>Need Assistance?</h4>
+    <p>Our customer service team is here to help:</p>
+    <ul>
+        <li><strong>Email:</strong> disbursement@microfinance.com</li>
+        <li><strong>Phone:</strong> 1-800-555-DISB (3472)</li>
+        <li><strong>Hours:</strong> Monday-Friday, 8 AM - 8 PM EST</li>
+    </ul>
+
+    <div style="margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;">
+        <p><strong>Remember:</strong> Timely repayment will help build your credit history and may qualify you for better rates in the future.</p>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p><strong>Thank you for choosing Microfinance System!</strong></p>
+        <p>We wish you success in your financial endeavors.</p>
+    </div>
+</div>
+</body>
+</html>

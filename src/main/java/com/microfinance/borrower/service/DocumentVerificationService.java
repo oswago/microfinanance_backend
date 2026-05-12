@@ -30,6 +30,7 @@ public class DocumentVerificationService {
     private final BorrowerDocumentRepository borrowerDocumentRepository;
     private final BorrowerDocumentService borrowerDocumentService;
     private final SecurityUtils securityUtils; // Inject SecurityUtils
+    private final KycWorkflowService kycWorkflowService;
 
     @Transactional(readOnly = true)
     public List<DocumentVerificationDto> getDocumentVerifications(Long borrowerId) {
@@ -76,16 +77,34 @@ public class DocumentVerificationService {
         verification.setIsActive(request.getIsActive());
         verification.setCreatedBy(securityUtils.getCurrentUserId());
 
+        log.info("Saving document verification...");
         DocumentVerification savedVerification = verificationRepository.save(verification);
+        log.info("Successfully saved document verification: ID={}", savedVerification.getId());
 
         // Update corresponding borrower document status if exists
         if (borrowerDocument != null) {
             updateBorrowerDocumentStatus(borrowerDocument, request.getVerificationStatus());
         }
 
+        // FLUSH to ensure DB consistency
+        log.info("Flushing transaction...");
+        verificationRepository.flush();
+        if (borrowerDocument != null) {
+            borrowerDocumentRepository.flush();
+        }
+
+        // Then auto-complete workflow steps
+        kycWorkflowService.autoCompleteStepsFromDocuments(
+                request.getBorrowerId(),
+                List.of(borrowerDocument.getId()),
+                securityUtils.getCurrentUserId(),
+                securityUtils.getCurrentUsername()
+        );
+
         log.info("Created document verification for borrower {}: {}", borrower.getFullName(), request.getDocumentType());
         return convertToDto(savedVerification);
     }
+
 
     @Transactional
     public DocumentVerificationDto updateDocumentVerification(Long id, DocumentVerificationUpdateRequest request) {
@@ -137,6 +156,15 @@ public class DocumentVerificationService {
         if (verification.getBorrowerDocument() != null && request.getVerificationStatus() != null) {
             updateBorrowerDocumentStatus(verification.getBorrowerDocument(), request.getVerificationStatus());
         }
+
+        // Then auto-complete workflow steps
+        kycWorkflowService.autoCompleteStepsFromDocuments(
+                verification.getBorrower().getId(),
+                List.of(verification.getBorrowerDocument().getId()),
+                securityUtils.getCurrentUserId(),
+                securityUtils.getCurrentUsername()
+        );
+
 
         log.info("Updated document verification: {}", id);
         return convertToDto(updatedVerification);

@@ -3,29 +3,30 @@ package com.microfinance.loanproducts.deserializer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.entity.LoanProduct;
 
 import java.io.IOException;
 
-public class TenureUnitDeserializer extends JsonDeserializer<LoanProduct.TenureUnit> {
+public class TenureUnitDeserializer extends JsonDeserializer<GeneralConfig.TenureUnit> {
     
     @Override
-    public LoanProduct.TenureUnit deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    public GeneralConfig.TenureUnit deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         String value = p.getText().toUpperCase();
         
         switch (value) {
             case "DAYS":
             case "DAY":
-                return LoanProduct.TenureUnit.DAYS;
+                return GeneralConfig.TenureUnit.DAYS;
             case "WEEKS":
             case "WEEK":
-                return LoanProduct.TenureUnit.WEEKS;
+                return GeneralConfig.TenureUnit.WEEKS;
             case "MONTHS":
             case "MONTH":
-                return LoanProduct.TenureUnit.MONTHS;
+                return GeneralConfig.TenureUnit.MONTHS;
             case "YEARS":
             case "YEAR":
-                return LoanProduct.TenureUnit.YEARS;
+                return GeneralConfig.TenureUnit.YEARS;
             default:
                 throw new IllegalArgumentException("Unknown tenure unit: " + value);
         }

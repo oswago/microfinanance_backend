@@ -3,10 +3,13 @@ package com.microfinance.base.utils;
 import com.microfinance.base.entity.User;
 import com.microfinance.base.repository.UserRepository;
 import com.microfinance.base.security.UserPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
 @RequiredArgsConstructor
@@ -71,4 +74,26 @@ public class SecurityUtils {
             throw new RuntimeException("Unable to extract user ID from authentication principal. Principal type: " + principal.getClass().getName());
         }
     }
+
+
+
+
+    public String getCurrentIpAddress() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+        return ipAddress;
+    }
+
+
+    public String getCurrentUserAgent() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        return request.getHeader("User-Agent");
+    }
+
+
+
+
 }

@@ -1,5 +1,6 @@
 package com.microfinance.loanproducts.controller;
 
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.dto.LoanProductCreateRequest;
 import com.microfinance.loanproducts.dto.LoanProductDTO;
 import com.microfinance.loanproducts.dto.LoanProductUpdateRequest;
@@ -71,7 +72,7 @@ public class LoanProductController {
 
     @GetMapping("/by-status/{status}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('BRANCH_MANAGER')")
-    public ResponseEntity<List<LoanProductDTO>> getLoanProductsByStatus(@PathVariable LoanProduct.ProductStatus status) {
+    public ResponseEntity<List<LoanProductDTO>> getLoanProductsByStatus(@PathVariable GeneralConfig.ProductStatus status) {
         List<LoanProduct> products = loanProductService.getLoanProductsByStatus(status);
         List<LoanProductDTO> productDTOs = products.stream()
                 .map(LoanProductDTO::fromEntity)
@@ -115,7 +116,7 @@ public class LoanProductController {
     public ResponseEntity<List<LoanProductDTO>> searchLoanProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String productTypeCode,
-            @RequestParam(required = false) LoanProduct.InterestMethod interestMethod) {
+            @RequestParam(required = false)GeneralConfig.InterestMethod interestMethod) {
         List<LoanProduct> products = loanProductService.searchLoanProductsByCode(name, productTypeCode, interestMethod);
         List<LoanProductDTO> productDTOs = products.stream()
                 .map(LoanProductDTO::fromEntity)

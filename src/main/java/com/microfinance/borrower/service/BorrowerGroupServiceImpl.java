@@ -5,9 +5,13 @@ import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.borrower.entity.BorrowerGroup;
 import com.microfinance.borrower.repository.BorrowerGroupRepository;
 import com.microfinance.borrower.repository.BorrowerRepository;
-import com.microfinance.borrower.service.BorrowerGroupService;
+import com.microfinance.common.config.GeneralConfig;
+import com.microfinance.exception.BusinessException;
+import com.microfinance.exception.ResourceNotFoundException;
 import com.microfinance.system.entity.Branch;
 import com.microfinance.system.repository.BranchRepository;
+import com.microfinance.system.service.ActivityLogService;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.microfinance.base.utils.SecurityUtils;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +34,11 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
     private final BorrowerGroupRepository groupRepository;
     private final BorrowerRepository borrowerRepository;
     private final BranchRepository branchRepository;
-    
+    private final ActivityLogService activityLogService;
+    private final SecurityUtils securityUtils; // Inject SecurityUtils
+    private final EntityManager entityManager; // Add this injection
+
+
     @Override
     @Transactional(readOnly = true)
     public Page<BorrowerGroupDto> getAllGroups(Pageable pageable) {
@@ -81,7 +91,7 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         }
         
         group.setCreatedBy(createdBy);
-        group.setStatus(BorrowerGroup.GroupStatus.ACTIVE);
+        group.setStatus(GeneralConfig.GroupStatus.ACTIVE);
         
         BorrowerGroup savedGroup = groupRepository.save(group);
         log.info("Created new borrower group: {} with code: {}", savedGroup.getGroupName(), savedGroup.getGroupCode());
@@ -99,7 +109,7 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         existingGroup.setDescription(groupDto.getDescription());
         existingGroup.setGroupType(groupDto.getGroupType());
         existingGroup.setMaxMembers(groupDto.getMaxMembers());
-        existingGroup.setMeetingSchedule(groupDto.getMeetingSchedule());
+        existingGroup.setMeetingDay(DayOfWeek.valueOf(groupDto.getMeetingDay()));
         existingGroup.setMeetingLocation(groupDto.getMeetingLocation());
         existingGroup.setJointLiabilityType(groupDto.getJointLiabilityType());
         
@@ -124,7 +134,7 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
         
         // Soft delete - set status to DISSOLVED
-        group.setStatus(BorrowerGroup.GroupStatus.DISSOLVED);
+        group.setStatus(GeneralConfig.GroupStatus.DISSOLVED);
         groupRepository.save(group);
         
         log.info("Soft deleted borrower group: {} with id: {}", group.getGroupName(), id);
@@ -132,7 +142,7 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
     
     @Override
     @Transactional
-    public BorrowerGroupDto updateGroupStatus(Long id, BorrowerGroup.GroupStatus status) {
+    public BorrowerGroupDto updateGroupStatus(Long id, GeneralConfig.GroupStatus status) {
         BorrowerGroup group = groupRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
         
@@ -160,7 +170,8 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
     public BorrowerGroupDto addMemberToGroup(Long groupId, Long borrowerId) {
         BorrowerGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + groupId));
-        
+
+
         Borrower borrower = borrowerRepository.findById(borrowerId)
                 .orElseThrow(() -> new EntityNotFoundException("Borrower not found with id: " + borrowerId));
         
@@ -168,7 +179,9 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         if (group.getMembers().contains(borrower)) {
             throw new IllegalArgumentException("Borrower is already a member of this group");
         }
-        
+
+        // Check group member limit using current count + 1
+        int currentCount = borrowerRepository.countByGroupId(groupId);
         // Check group member limit
         if (group.getMaxMembers() != null && group.getMembers().size() >= group.getMaxMembers()) {
             throw new IllegalArgumentException("Group has reached maximum member limit");
@@ -176,6 +189,11 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         
         borrower.setGroup(group);
         borrowerRepository.save(borrower);
+
+        // Update member count - use repository count for accuracy
+        int newMemberCount = currentCount + 1;
+        group.setMemberCount(newMemberCount);
+        groupRepository.save(group);
         
         log.info("Added borrower {} to group {}", borrower.getFullName(), group.getGroupName());
         
@@ -202,6 +220,71 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         
         return convertToDto(group);
     }
+
+    public GroupLeaderResponseDto setGroupLeader(Long groupId, Long borrowerId) {
+        BorrowerGroup group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group not found with id: " + groupId));
+
+        Borrower borrower = borrowerRepository.findById(borrowerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Borrower not found with id: " + borrowerId));
+
+        // Check if borrower is a member of the group
+        boolean isMember = borrowerRepository.isBorrowerInGroup(borrowerId, groupId);
+        if (!isMember) {
+            throw new BusinessException("Borrower is not a member of this group");
+        }
+
+        // Update group leader
+        group.setGroupLeader(borrower);
+        group.setGroupLeaderName(borrower.getFirstName() + " " + borrower.getLastName());
+        group.setGroupLeaderPhone(borrower.getPhoneNumber());
+
+        BorrowerGroup savedGroup = groupRepository.save(group);
+
+        // Log the activity
+        activityLogService.logBorrowerActivity(
+                borrowerId,
+                GeneralConfig.BorrowerActivityType.GROUP_LEADER_ASSIGNED,
+                "Assigned as group leader for group: " + group.getGroupName(),
+                securityUtils.getCurrentUserId()
+        );
+
+        return new GroupLeaderResponseDto(savedGroup);
+    }
+
+    public BorrowerGroupDto removeGroupLeader(Long groupId) {
+        BorrowerGroup group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group not found with id: " + groupId));
+
+
+
+        // Store the leader ID BEFORE removing it
+        Long previousLeaderId = null;
+        String previousLeaderName = null;
+
+        if (group.getGroupLeader() != null) {
+            previousLeaderId = group.getGroupLeader().getId();
+            previousLeaderName = group.getGroupLeaderName(); // Use the stored name
+        }
+
+
+        group.setGroupLeader(null);
+        group.setGroupLeaderName(null);
+        group.setGroupLeaderPhone(null);
+
+        BorrowerGroup savedGroup = groupRepository.save(group);
+
+        // Log the activity
+        activityLogService.logBorrowerActivity(
+                previousLeaderId,
+                GeneralConfig.BorrowerActivityType.GROUP_LEADER_REMOVED,
+                "Removed as group leader for group: " + group.getGroupName(),
+                securityUtils.getCurrentUserId()
+        );
+
+        return convertToDto(savedGroup);
+    }
+
     
     @Override
     @Transactional(readOnly = true)
@@ -249,11 +332,17 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         dto.setGroupType(group.getGroupType());
         dto.setStatus(group.getStatus());
         dto.setMaxMembers(group.getMaxMembers());
-        dto.setMeetingSchedule(group.getMeetingSchedule());
+        dto.setMeetingDay(String.valueOf(group.getMeetingDay()));
+        dto.setMeetingTime(group.getMeetingTime());
+        dto.setMeetingFrequency(group.getMeetingFrequency());
         dto.setMeetingLocation(group.getMeetingLocation());
+        dto.setFormationDate(group.getFormationDate());
         dto.setJointLiabilityType(group.getJointLiabilityType());
         dto.setCurrentMemberCount(group.getCurrentMemberCount());
-        
+        dto.setGroupLeaderPhone(group.getGroupLeaderPhone());
+        dto.setGroupLeaderName(group.getGroupLeaderName());
+        //dto.setGroupLeaderId(group.getGroupLeader().getId());
+
         if (group.getBranch() != null) {
             dto.setBranchId(group.getBranch().getId());
             dto.setBranchName(group.getBranch().getName());
@@ -269,9 +358,14 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         group.setDescription(dto.getDescription());
         group.setGroupType(dto.getGroupType());
         group.setMaxMembers(dto.getMaxMembers());
-        group.setMeetingSchedule(dto.getMeetingSchedule());
+        group.setMeetingDay(DayOfWeek.valueOf(dto.getMeetingDay()));
+        group.setMeetingTime(dto.getMeetingTime());
+        group.setMeetingFrequency(dto.getMeetingFrequency());
         group.setMeetingLocation(dto.getMeetingLocation());
+        group.setFormationDate(dto.getFormationDate());
         group.setJointLiabilityType(dto.getJointLiabilityType());
+        group.setGroupLeaderPhone(dto.getGroupLeaderPhone());
+
         
         return group;
     }

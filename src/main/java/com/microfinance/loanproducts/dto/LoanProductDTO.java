@@ -1,6 +1,7 @@
 package com.microfinance.loanproducts.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.entity.LoanProduct;
 import com.microfinance.loanproducttype.dto.ProductTypeDTO;
 import lombok.Data;
@@ -15,13 +16,13 @@ public class LoanProductDTO {
     private String name;
     private String description;
     private ProductTypeDTO productType;
-    private LoanProduct.InterestMethod interestMethod;
+    private GeneralConfig.InterestMethod interestMethod;
     private BigDecimal interestRate;
     private BigDecimal minLoanAmount;
     private BigDecimal maxLoanAmount;
     private Integer minTenure;
     private Integer maxTenure;
-    private LoanProduct.TenureUnit tenureUnit;
+    private GeneralConfig.TenureUnit tenureUnit;
     private Integer gracePeriod;
     private BigDecimal processingFeeRate;
     private BigDecimal latePaymentFee;
@@ -31,7 +32,7 @@ public class LoanProductDTO {
     private Integer minCreditScore;
     private String eligibilityCriteria;
     private String requiredDocuments;
-    private LoanProduct.ProductStatus status;
+    private GeneralConfig.ProductStatus status;
     private Integer version;
     private Boolean isTemplate;
     private Boolean active;
@@ -53,6 +54,10 @@ public class LoanProductDTO {
             return null;
         }
 
+        System.out.println("========== CONVERTING LOAN PRODUCT ==========");
+        System.out.println("Product ID: " + product.getId());
+        System.out.println("Product Class: " + product.getClass().getName());
+
         LoanProductDTO dto = new LoanProductDTO();
         dto.setId(product.getId());
         dto.setProductCode(product.getProductCode());
@@ -61,7 +66,7 @@ public class LoanProductDTO {
 
         // Convert ProductType to DTO - this is safe and prevents circular reference
         if (product.getProductType() != null) {
-            dto.setProductType(ProductTypeDTO.fromEntity(product.getProductType()));
+           // dto.setProductType(ProductTypeDTO.fromEntity(product.getProductType()));
         }
 
         dto.setInterestMethod(product.getInterestMethod());

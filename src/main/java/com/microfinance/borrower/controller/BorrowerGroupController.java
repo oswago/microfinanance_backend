@@ -3,8 +3,10 @@ package com.microfinance.borrower.controller;
 import com.microfinance.base.utils.SecurityUtils;
 import com.microfinance.borrower.dto.BorrowerGroupDto;
 import com.microfinance.borrower.dto.BorrowerSummaryDto;
+import com.microfinance.borrower.dto.GroupLeaderResponseDto;
 import com.microfinance.borrower.entity.BorrowerGroup;
 import com.microfinance.borrower.service.BorrowerGroupService;
+import com.microfinance.common.config.GeneralConfig;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -85,8 +87,7 @@ public class BorrowerGroupController {
     public ResponseEntity<BorrowerGroupDto> createGroup(
             @Valid @RequestBody BorrowerGroupDto groupDto,
             Authentication authentication) {
-        
-       // Long createdBy = getUserIdFromAuthentication(authentication);
+
         Long createdBy=securityUtils.getCurrentUserId();
         BorrowerGroupDto createdGroup = borrowerGroupService.createGroup(groupDto, createdBy);
         return ResponseEntity.ok(createdGroup);
@@ -113,7 +114,7 @@ public class BorrowerGroupController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER')")
     public ResponseEntity<BorrowerGroupDto> updateGroupStatus(
             @PathVariable Long id,
-            @RequestParam BorrowerGroup.GroupStatus status) {
+            @RequestParam GeneralConfig.GroupStatus status) {
         
         BorrowerGroupDto updatedGroup = borrowerGroupService.updateGroupStatus(id, status);
         return ResponseEntity.ok(updatedGroup);
@@ -145,6 +146,24 @@ public class BorrowerGroupController {
         Long count = borrowerGroupService.getGroupCountByBranch(branchId);
         return ResponseEntity.ok(count);
     }
+
+    @PostMapping("/{groupId}/leader/{borrowerId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER')")
+    public ResponseEntity<GroupLeaderResponseDto> setGroupLeader(
+            @PathVariable Long groupId,
+            @PathVariable Long borrowerId) {
+
+        GroupLeaderResponseDto response = borrowerGroupService.setGroupLeader(groupId, borrowerId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{groupId}/leader")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'LOAN_OFFICER')")
+    public ResponseEntity<BorrowerGroupDto> removeGroupLeader(@PathVariable Long groupId) {
+        BorrowerGroupDto updatedGroup = borrowerGroupService.removeGroupLeader(groupId);
+        return ResponseEntity.ok(updatedGroup);
+    }
+
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
         // Extract user ID from authentication principal

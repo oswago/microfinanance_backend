@@ -1,6 +1,8 @@
 package com.microfinance.borrower.dto;
 
-import com.microfinance.borrower.entity.Borrower;
+import com.microfinance.common.config.GeneralConfig;
+import com.microfinance.loanproducts.dto.LoanProductDTO;
+import com.microfinance.loanproducts.entity.LoanProduct;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +12,6 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 public class BorrowerDto {
@@ -25,7 +26,7 @@ public class BorrowerDto {
     private String middleName;
     
     @NotNull
-    private Borrower.Gender gender;
+    private GeneralConfig.Gender gender;
     
     private LocalDate dateOfBirth;
     
@@ -45,7 +46,7 @@ public class BorrowerDto {
     private String postalCode;
     
     @NotNull
-    private Borrower.MaritalStatus maritalStatus;
+    private GeneralConfig.MaritalStatus maritalStatus;
     
     private String occupation;
     private String employer;
@@ -53,7 +54,11 @@ public class BorrowerDto {
     
     private Long branchId;
     private Long groupId;
-    
+
+    // Add loan product fields
+    private Long loanProductId;
+    private LoanProduct loanProduct; // For displaying product type details
+
     private String emergencyContactName;
     private String emergencyContactPhone;
     private String emergencyContactRelationship;
@@ -65,8 +70,8 @@ public class BorrowerDto {
     
     // Read-only fields
     private String borrowerNumber;
-    private Borrower.BorrowerStatus status;
-    private Borrower.KycStatus kycStatus;
+    private GeneralConfig.BorrowerStatus status;
+    private GeneralConfig.KycStatus kycStatus;
     private LocalDateTime kycVerifiedAt;
     private String fullName;
     private String branchName;

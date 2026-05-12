@@ -12,7 +12,11 @@ import com.microfinance.borrower.repository.BorrowerRepository;
 import com.microfinance.borrower.repository.KycWorkflowRepository;
 import com.microfinance.borrower.repository.KycWorkflowStepStatusRepository;
 import com.microfinance.common.config.DocumentConfig;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.common.service.DocumentConfigService;
+import com.microfinance.common.util.CommonUtil;
+import com.microfinance.loanproducts.entity.LoanProduct;
+import com.microfinance.loanproducts.repository.LoanProductRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +52,8 @@ public class BorrowerDocumentService {
     private final KycWorkflowRepository kycWorkflowRepository;
     private final KycWorkflowStepStatusRepository kycWorkflowStepStatusRepository;
     private final DocumentConfigService documentConfigService;
+    private final KycWorkflowService kycWorkflowService;
+    private final LoanProductRepository loanProductRepository;
 
     @Value("${app.file.upload-dir:uploads}")
     private String uploadDir;
@@ -57,6 +63,9 @@ public class BorrowerDocumentService {
 
     @Value("${app.file.allowed-types:image/jpeg,image/png,image/jpg,application/pdf}")
     private String allowedFileTypes;
+
+    @Value("${app.system.default-use-case:BASIC-KYC}")
+    private String def_usecase_name;
 
     private Path fileStorageLocation;
 
@@ -94,6 +103,14 @@ public class BorrowerDocumentService {
                     description, file, uniqueFileName, filePath.toString());
 
             BorrowerDocument savedDocument = documentRepository.save(document);
+
+            // Then auto-complete workflow steps
+           /* kycWorkflowService.autoCompleteStepsFromDocuments(
+                    savedDocument.getBorrower().getId(),
+                    List.of(savedDocument.getId()),
+                    securityUtils.getCurrentUserId(),
+                    securityUtils.getCurrentUsername()
+            );*/
 
             log.info("Document uploaded successfully for borrower {}: {}",
                     borrower.getFullName(), savedDocument.getDocumentName());
@@ -209,15 +226,7 @@ public class BorrowerDocumentService {
             throw new RuntimeException("Failed to delete document file", ex);
         }
     }
-/*
-    // Additional document-related methods
-    @Transactional(readOnly = true)
-    public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
-        return documentRepository.findByBorrowerId(borrowerId)
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }*/
+
 @Transactional(readOnly = true)
 public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
     List<BorrowerDocument> documents = documentRepository.findByBorrowerId(borrowerId);
@@ -394,7 +403,7 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
     public BulkKycVerificationResponse bulkKycRejection(List<Long> borrowerIds, String rejectionReason, Long rejectedBy) {
         BulkKycVerificationRequest request = new BulkKycVerificationRequest();
         request.setBorrowerIds(borrowerIds);
-        request.setKycStatus(Borrower.KycStatus.REJECTED);
+        request.setKycStatus(GeneralConfig.KycStatus.REJECTED);
         request.setVerificationNotes(rejectionReason);
 
         return bulkUpdateKycStatus(request);
@@ -404,7 +413,7 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
     public BulkKycVerificationResponse bulkKycVerification(List<Long> borrowerIds, Long verifiedBy) {
         BulkKycVerificationRequest request = new BulkKycVerificationRequest();
         request.setBorrowerIds(borrowerIds);
-        request.setKycStatus(Borrower.KycStatus.VERIFIED);
+        request.setKycStatus(GeneralConfig.KycStatus.VERIFIED);
         request.setVerificationNotes("Bulk verification completed");
         request.setSendNotification(true);
         request.setNotificationTemplate("KYC_VERIFIED");
@@ -437,7 +446,9 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
 
         // Get KYC required documents
        // Set<DocumentConfig.DocumentType> kycDocuments = DocumentConfig.DocumentUtils.getKYCRequiredDocuments();
-        Set<DocumentConfig.DocumentType> kycDocuments = documentConfigService.getRequiredDocumentsForUseCase("FULL_KYC");
+       // Set<DocumentConfig.DocumentType> kycDocuments = documentConfigService.getRequiredDocumentsForUseCase("BASIC_KYC");
+        Set<DocumentConfig.DocumentType> kycDocuments = CommonUtil.getRequiredDocumentsForBorrower(borrowerId,def_usecase_name);
+
         long documentsRequired = kycDocuments.size();
 
         summary.setDocumentsUploaded((int) documentsUploaded);
@@ -478,7 +489,7 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
     }
 
     // Helper method to determine activity type based on KYC status
-    private com.microfinance.borrower.dto.BorrowerActivityDto.ActivityType getKycActivityType(Borrower.KycStatus kycStatus) {
+    private com.microfinance.borrower.dto.BorrowerActivityDto.ActivityType getKycActivityType(GeneralConfig.KycStatus kycStatus) {
         switch (kycStatus) {
             case VERIFIED:
                 return com.microfinance.borrower.dto.BorrowerActivityDto.ActivityType.BORROWER_KYC_VERIFIED;
@@ -509,7 +520,7 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
 
     // PLACEHOLDER ONLY - This method had no implementation in the original
     @Transactional(readOnly = true)
-    public List<BorrowerDto> getBorrowersEligibleForKycUpdate(Borrower.KycStatus currentStatus, Boolean documentsUploaded) {
+    public List<BorrowerDto> getBorrowersEligibleForKycUpdate(GeneralConfig.KycStatus currentStatus, Boolean documentsUploaded) {
         // PLACEHOLDER: This method had no implementation in the original BorrowerService
         // Typically, borrowers with pending KYC and all documents uploaded are eligible
         List<Borrower> borrowers;
@@ -518,7 +529,7 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
             borrowers = borrowerRepository.findByKycStatus(currentStatus);
         } else {
             // Default: get borrowers with pending KYC
-            borrowers = borrowerRepository.findByKycStatus(Borrower.KycStatus.PENDING);
+            borrowers = borrowerRepository.findByKycStatus(GeneralConfig.KycStatus.PENDING);
         }
 
         // Filter by documents uploaded if requested

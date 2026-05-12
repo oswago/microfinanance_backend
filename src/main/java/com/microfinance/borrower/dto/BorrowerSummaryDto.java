@@ -1,6 +1,7 @@
 package com.microfinance.borrower.dto;
 
 import com.microfinance.borrower.entity.Borrower;
+import com.microfinance.common.config.GeneralConfig;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -16,8 +17,8 @@ public class BorrowerSummaryDto {
     private String fullName;
     private String phoneNumber;
     private String email;
-    private Borrower.BorrowerStatus status;
-    private Borrower.KycStatus kycStatus;
+    private GeneralConfig.BorrowerStatus status;
+    private GeneralConfig.KycStatus kycStatus;
     private LocalDateTime kycVerifiedAt;
     private String branchName;
     private String groupName;

@@ -1,7 +1,7 @@
 package com.microfinance.borrower.service;
 
 import com.microfinance.borrower.dto.*;
-import com.microfinance.borrower.entity.BorrowerGroup;
+import com.microfinance.common.config.GeneralConfig;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -26,7 +26,7 @@ public interface BorrowerGroupService {
     
     void deleteGroup(Long id);
     
-    BorrowerGroupDto updateGroupStatus(Long id, BorrowerGroup.GroupStatus status);
+    BorrowerGroupDto updateGroupStatus(Long id, GeneralConfig.GroupStatus status);
 
     List<BorrowerSummaryDto> getGroupMembers(Long groupId);
     
@@ -48,4 +48,7 @@ public interface BorrowerGroupService {
     GroupMeetingDto scheduleMeeting(Long groupId, GroupMeetingDto meetingDto);
     List<GroupMeetingDto> getGroupMeetings(Long groupId, LocalDate from, LocalDate to);
 
+    GroupLeaderResponseDto setGroupLeader(Long groupId, Long borrowerId);
+
+    BorrowerGroupDto removeGroupLeader(Long groupId);
 }

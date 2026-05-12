@@ -1,6 +1,7 @@
 package com.microfinance.loanproducts.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.deserializer.InterestMethodDeserializer;
 import com.microfinance.loanproducts.deserializer.TenureUnitDeserializer;
 import com.microfinance.loanproducts.entity.LoanProduct;
@@ -18,7 +19,7 @@ public class LoanProductUpdateRequest {
     private Long productTypeId;
 
     @JsonDeserialize(using = InterestMethodDeserializer.class)
-    private LoanProduct.InterestMethod interestMethod;
+    private GeneralConfig.InterestMethod interestMethod;
 
     @DecimalMin("0.00")
     private BigDecimal interestRate;
@@ -33,7 +34,7 @@ public class LoanProductUpdateRequest {
     private Integer maxTenure;
 
     @JsonDeserialize(using = TenureUnitDeserializer.class)
-    private LoanProduct.TenureUnit tenureUnit;
+    private GeneralConfig.TenureUnit tenureUnit;
 
     private Integer gracePeriod;
     private BigDecimal processingFeeRate;
@@ -44,7 +45,7 @@ public class LoanProductUpdateRequest {
     private Integer minCreditScore;
     private String eligibilityCriteria;
     private String requiredDocuments;
-    private LoanProduct.ProductStatus status;
+    private GeneralConfig.ProductStatus status;
     private Boolean active;
 
     // Add toEntity method for updating existing entity

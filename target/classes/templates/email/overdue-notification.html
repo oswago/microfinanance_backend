@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Overdue Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #ff9800;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #fff8e1;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+        }
+        .alert-banner {
+            background-color: #ff5722;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .days-overdue {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ff5722;
+            margin: 10px 0;
+        }
+        .application-details {
+            background-color: white;
+            border: 2px solid #ff9800;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+        .timeline:before {
+            content: "";
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ff9800;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .timeline-item:before {
+            content: "";
+            position: absolute;
+            left: -25px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ff9800;
+        }
+        .overdue .timeline-item:before {
+            background-color: #ff5722;
+        }
+        .button {
+            display: inline-block;
+            background-color: #ff9800;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .action-required {
+            background-color: #ffecb3;
+            border: 2px solid #ff9800;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>⚠️ Application Overdue Alert</h1>
+</div>
+
+<div class="content">
+    <div class="alert-banner">
+        <h2>ATTENTION REQUIRED</h2>
+        <p>An application has exceeded its processing timeline</p>
+    </div>
+
+    <div style="text-align: center;">
+        <div class="days-overdue">
+            <span th:text="${daysOverdue}">0</span> Days Overdue
+        </div>
+        <p><strong>Application requires immediate attention</strong></p>
+    </div>
+
+    <div class="application-details">
+        <h3>Application Details:</h3>
+        <p><strong>Application Number:</strong> <span th:text="${applicationNumber}">N/A</span></p>
+        <p><strong>Assigned To:</strong> <span th:text="${assignedTo}">N/A</span></p>
+        <p><strong>Current Status:</strong> <span style="color: #ff5722; font-weight: bold;">OVERDUE</span></p>
+        <p><strong>Date:</strong> <span th:text="${#temporals.format(date, 'dd MMM yyyy, HH:mm')}">N/A</span></p>
+    </div>
+
+    <div class="action-required">
+        <h3>🚨 Required Action:</h3>
+        <p>Please review and process this application immediately to:</p>
+        <ul>
+            <li>Prevent further SLA breaches</li>
+            <li>Maintain customer satisfaction</li>
+            <li>Avoid escalation to management</li>
+            <li>Meet department performance targets</li>
+        </ul>
+    </div>
+
+    <div class="timeline">
+        <div class="timeline-item">
+            <strong>Application Submitted</strong>
+            <p>Customer submitted the application</p>
+        </div>
+        <div class="timeline-item">
+            <strong>Document Review</strong>
+            <p>Documents were verified</p>
+        </div>
+        <div class="timeline-item overdue">
+            <strong>Approval Decision</strong>
+            <p><strong>OVERDUE - Immediate action required</strong></p>
+        </div>
+    </div>
+
+    <p>Click below to access the application and take action:</p>
+
+    <div style="text-align: center;">
+        <a th:href="${applicationUrl}" class="button">Process Application Now</a>
+    </div>
+
+    <h3>Consequences of Delay:</h3>
+    <ul>
+        <li>Customer dissatisfaction and potential complaints</li>
+        <li>Negative impact on department performance metrics</li>
+        <li>Possible escalation to higher management</li>
+        <li>Risk of losing customer to competitors</li>
+        <li>Impact on quarterly performance reviews</li>
+    </ul>
+
+    <h3>Immediate Next Steps:</h3>
+    <ol>
+        <li>Review the application completely</li>
+        <li>Check for any pending requirements</li>
+        <li>Make a decision (Approve/Reject/Return)</li>
+        <li>Update the application status</li>
+        <li>Notify the customer</li>
+    </ol>
+
+    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p><strong>Note:</strong> If you're unable to process this application, please escalate it to your supervisor immediately.</p>
+        <p>Multiple overdue applications may affect performance evaluations.</p>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ff9800;">
+        <p><strong>Performance Management System</strong></p>
+        <p>This notification is part of our quality assurance process.</p>
+        <p style="font-size: 12px; color: #666;">Notification ID: OV-<span th:text="${applicationNumber}">N/A</span>-<span th:text="${#temporals.format(date, 'yyyyMMdd')}">N/A</span></p>
+    </div>
+</div>
+</body>
+</html>

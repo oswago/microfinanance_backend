@@ -5,13 +5,16 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+//@EqualsAndHashCode(callSuper = true)
 public class User extends BaseEntity {
 
     @NotBlank
@@ -40,6 +43,11 @@ public class User extends BaseEntity {
     private Integer failedLoginAttempts = 0;
     private LocalDateTime accountLockedUntil;
 
+    // RENAMED COLUMN - avoid reserved keyword
+    @Column(name = "is_system_user")
+    private Boolean systemUser = false;
+
+
     // MFA Fields
     private Boolean mfaEnabled = false;
     private String mfaSecret;
@@ -49,6 +57,20 @@ public class User extends BaseEntity {
         this.failedLoginAttempts = 0;
         this.active = true;
         this.mfaEnabled = false;
+    }
+
+    public String getFullName() {
+        StringBuilder sb = new StringBuilder();
+        if (firstName != null) {
+            sb.append(firstName);
+        }
+        if (lastName != null) {
+            if (!sb.isEmpty()) {
+                sb.append(" ");
+            }
+            sb.append(lastName);
+        }
+        return sb.toString();
     }
 
     // Helper method to safely get failed login attempts
@@ -61,6 +83,8 @@ public class User extends BaseEntity {
         this.failedLoginAttempts = getFailedLoginAttempts() + 1;
     }
 
+
+
     public enum UserRole {
         SUPER_ADMIN,
         CREDIT_APPROVER,
@@ -68,11 +92,12 @@ public class User extends BaseEntity {
         BRANCH_MANAGER,
         CASHIER,
         COLLECTION_OFFICER,
+        LEGAL_OFFICER,
         ACCOUNTANT,
         AUDITOR,
-       CUSTOMER_SERVICE,
+        CUSTOMER_SERVICE,
         FIELD_AGENT,
-       USER
+        CREDIT_OFFICER, REGIONAL_MANAGER
     }
 
 }

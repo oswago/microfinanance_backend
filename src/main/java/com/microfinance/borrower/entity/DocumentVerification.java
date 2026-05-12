@@ -1,5 +1,6 @@
 package com.microfinance.borrower.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microfinance.base.entity.BaseEntity;
 import com.microfinance.common.config.DocumentConfig;
 import jakarta.persistence.*;
@@ -16,13 +17,18 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DocumentVerification extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_id", nullable = false)
+    @JsonIgnore  // ADD THIS - CRITICAL
     private Borrower borrower;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_document_id")
+    @JsonIgnore  // ADD THIS - CRITICAL
     private BorrowerDocument borrowerDocument;
 
     @Enumerated(EnumType.STRING)
@@ -50,8 +56,11 @@ public class DocumentVerification extends BaseEntity {
     @Column(name = "verification_status", nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
-    @Column(name = "verified_by")
+    @Column(name = "verified_by_name")
     private String verifiedBy;
+
+    @Column(name = "verified_by")
+    private Long verifiedById;
 
     @Column(name = "verification_date")
     private LocalDateTime verificationDate;
@@ -67,6 +76,10 @@ public class DocumentVerification extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    // ADD THIS MISSING PROPERTY:
+    @Column(name = "is_verified")
+    private Boolean verified = false;
 
     public enum VerificationStatus {
         PENDING, VERIFIED, REJECTED, EXPIRED

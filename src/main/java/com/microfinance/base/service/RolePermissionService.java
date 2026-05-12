@@ -4,8 +4,12 @@ import com.microfinance.base.entity.RolePermission;
 import com.microfinance.base.entity.User;
 import com.microfinance.base.repository.RolePermissionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -13,6 +17,7 @@ import java.util.List;
 public class RolePermissionService {
 
     private final RolePermissionRepository rolePermissionRepository;
+    private static final Logger log = LoggerFactory.getLogger(RolePermissionService.class);
 
     public List<RolePermission> getPermissionsForRole(User.UserRole role) {
         return rolePermissionRepository.findByRole(role);
@@ -23,20 +28,52 @@ public class RolePermissionService {
     }
 
     public RolePermission addPermissionToRole(User.UserRole role, String permission, String description) {
+        // Validate inputs
+        log.info(">>Permission: {} Role: {} Description: {}  ", permission,role,description);
+        if (role == null) {
+            throw new IllegalArgumentException("Role cannot be null");
+        }
+        if (permission == null || permission.trim().isEmpty()) {
+            throw new IllegalArgumentException("Permission cannot be null or empty");
+        }
+
         // Check if permission already exists for this role
         if (rolePermissionRepository.existsByRoleAndPermission(role, permission)) {
             throw new IllegalArgumentException("Permission " + permission + " already exists for role " + role);
         }
 
-        RolePermission rolePermission = new RolePermission();
-        rolePermission.setRole(role);
-        rolePermission.setPermission(permission);
-        rolePermission.setDescription(description);
-        // You might want to extract module from permission code or pass it as parameter
-        rolePermission.setModule(extractModuleFromPermission(permission));
+        // Extract module from permission code (ensure it's not null)
+        String module = extractModuleFromPermission(permission);
+        if (module == null || module.trim().isEmpty()) {
+            module = "General"; // Default module
+            log.warn("Could not extract module for permission: {}, using default 'General'", permission);
+        }
 
-        return rolePermissionRepository.save(rolePermission);
+        // Ensure description is not null
+        String finalDescription = (description != null && !description.trim().isEmpty())
+                ? description
+                : "Permission: " + permission;
+
+        RolePermission rolePermission = new RolePermission();
+        rolePermission.setRole(User.UserRole.valueOf(role.name())); // Convert enum to string
+        rolePermission.setPermission(permission);
+        rolePermission.setDescription(finalDescription);
+        rolePermission.setModule(module);
+        rolePermission.setCreatedAt(LocalDateTime.now());
+        rolePermission.setUpdatedAt(LocalDateTime.now());
+
+        try {
+            return rolePermissionRepository.save(rolePermission);
+        } catch (DataIntegrityViolationException e) {
+            log.error("Failed to save permission {} for role {}: {}", permission, role, e.getMessage());
+            // Check again if it exists (might have been added by another transaction)
+            if (rolePermissionRepository.existsByRoleAndPermission(role, permission)) {
+                throw new IllegalArgumentException("Permission " + permission + " already exists for role " + role);
+            }
+            throw new RuntimeException("Database constraint violation: " + e.getMessage(), e);
+        }
     }
+
 
     public void removePermissionFromRole(User.UserRole role, String permission) {
         rolePermissionRepository.findByRoleAndPermission(role, permission)
@@ -92,7 +129,9 @@ public class RolePermissionService {
             return "Mobile & Integration";
         } else if (permission.startsWith("ROLE_") || permission.startsWith("PERMISSION_")) {
             return "Role & Permission Management";
-        }
+        } else if (permission.startsWith("LEGAL_") || permission.startsWith("COURT") || permission.startsWith("ASSET")) {
+              return "Legal & Recovery Management";
+    }
         return "Other";
     }
 }

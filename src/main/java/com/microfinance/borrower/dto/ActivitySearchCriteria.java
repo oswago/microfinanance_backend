@@ -21,4 +21,8 @@ public class ActivitySearchCriteria {
     private Integer size = 20;
     private String sortBy = "activityDate";
     private String sortDirection = "DESC";
+
+    private BorrowerActivityDto.ActivityType activityType;
+    private String searchText;
+
 }

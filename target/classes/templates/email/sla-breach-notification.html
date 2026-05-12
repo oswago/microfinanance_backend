@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLA Breach Notification</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .header {
+        background-color: #d32f2f;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 5px 5px 0 0;
+    }
+    .content {
+        background-color: #ffebee;
+        padding: 20px;
+        border-radius: 0 0 5px 5px;
+    }
+    .breach-alert {
+        background-color: #ffcdd2;
+        border: 3px solid #d32f2f;
+        border-radius: 5px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .breach-level {
+        font-size: 24px;
+        font-weight: bold;
+        color: #d32f2f;
+        margin: 10px 0;
+    }
+    .hours-overdue {
+        font-size: 42px;
+        font-weight: bold;
+        color: #b71c1c;
+        margin: 15px 0;
+    }
+    .breach-details {
+        background-color: white;
+        border: 2px solid #d32f2f;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    .impact-assessment {
+        background-color: #fff3e0;
+        border: 2px solid #ff9800;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    .escalation-path {
+        background-color: #f3e5f5;
+        border: 2px solid #7b1fa2;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    .button {
+        display: inline-block;
+        background-color: #d32f2f;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 10px 5px;
+        font-weight: bold;
+    }
+    .button-secondary {
+        background-color: #455a64;
+    }
+    .metrics {
+        display: flex;
+        justify-content: space-around;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .metric-box {
+        padding: 15px;
+        border-radius: 5px;
+        min-width: 120px;
+    }
+    .metric-1 { background-color: #ffebee; }
+    .metric-2 { background-color: #fff3e0; }
+    .metric-3 { background-color: #f3e5f5; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>🚨 CRITICAL: SLA BREACH DETECTED</h1>
+</div>
+
+<div class="content">
+  <div class="breach-alert">
+    <h2>SERVICE LEVEL AGREEMENT BREACH</h2>
+    <div class="breach-level">SEVERITY LEVEL: HIGH</div>
+    <div class="hours-overdue">
+      <span th:text="${hoursOverdue}">0</span> Hours Overdue
+    </div>
+    <p><strong>Immediate escalation and resolution required</strong></p>
+  </div>
+
+  <h2>Breach Details:</h2>
+
+  <div class="breach-details">
+    <p><strong>Application Number:</strong> <span th:text="${applicationNumber}">N/A</span></p>
+    <p><strong>Responsible Role:</strong> <span th:text="${role}">N/A</span></p>
+    <p><strong>SLA Type:</strong> Approval Processing Time</p>
+    <p><strong>Breach Duration:</strong> <span th:text="${hoursOverdue}">0</span> hours beyond SLA limit</p>
+    <p><strong>Detection Time:</strong> <span th:text="${#temporals.format(date, 'dd MMM yyyy, HH:mm:ss')}">N/A</span></p>
+    <p><strong>Breach ID:</strong> SLA-BR-<span th:text="${applicationNumber}">N/A</span>-<span th:text="${#temporals.format(date, 'yyyyMMddHHmm')}">N/A</span></p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-box metric-1">
+      <h4>Impact Score</h4>
+      <div style="font-size: 24px; font-weight: bold; color: #d32f2f;">8.5/10</div>
+      <p>High Impact</p>
+    </div>
+    <div class="metric-box metric-2">
+      <h4>Customer Impact</h4>
+      <div style="font-size: 24px; font-weight: bold; color: #ff9800;">HIGH</div>
+      <p>Significant delay</p>
+    </div>
+    <div class="metric-box metric-3">
+      <h4>Financial Impact</h4>
+      <div style="font-size: 24px; font-weight: bold; color: #7b1fa2;">MEDIUM</div>
+      <p>Potential loss</p>
+    </div>
+  </div>
+
+  <div class="impact-assessment">
+    <h3>📊 Business Impact Assessment:</h3>
+    <ul>
+      <li><strong>Customer Experience:</strong> Severely impacted - customer waiting beyond promised timeline</li>
+      <li><strong>Brand Reputation:</strong> Negative impact - violates customer trust</li>
+      <li><strong>Operational Efficiency:</strong> Process bottleneck identified</li>
+      <li><strong>Compliance Risk:</strong> Potential regulatory concerns</li>
+      <li><strong>Financial Impact:</strong> Possible revenue loss and penalty exposure</li>
+    </ul>
+  </div>
+
+  <div class="escalation-path">
+    <h3>📈 Escalation Path Activated:</h3>
+    <ol>
+      <li><strong>Immediate:</strong> Current role holder (You)</li>
+      <li><strong>+1 Hour:</strong> Department Supervisor</li>
+      <li><strong>+2 Hours:</strong> Operations Manager</li>
+      <li><strong>+4 Hours:</strong> Head of Department</li>
+      <li><strong>+8 Hours:</strong> Executive Committee</li>
+    </ol>
+    <p><em>Each escalation level adds to the severity of the incident.</em></p>
+  </div>
+
+  <h3>Required Actions:</h3>
+
+  <div style="text-align: center; margin: 20px 0;">
+    <a th:href="${applicationUrl}" class="button">Resolve Immediately</a>
+    <a href="#" class="button button-secondary">Acknowledge Breach</a>
+  </div>
+
+  <h3>Resolution Steps:</h3>
+  <ol>
+    <li><strong>Immediate:</strong> Process the application decision now</li>
+    <li><strong>Within 1 hour:</strong> Update application status</li>
+    <li><strong>Within 2 hours:</strong> Notify customer with apology</li>
+    <li><strong>Within 4 hours:</strong> Submit breach report to supervisor</li>
+    <li><strong>Within 24 hours:</strong> Complete root cause analysis</li>
+  </ol>
+
+  <div style="background-color: #212121; color: white; padding: 15px; border-radius: 5px; margin-top: 20px;">
+    <h3 style="color: white;">⚠️ Consequences of Non-Compliance:</h3>
+    <ul style="color: #e0e0e0;">
+      <li>Formal warning and performance review</li>
+      <li>Impact on quarterly bonus eligibility</li>
+      <li>Mandatory process retraining</li>
+      <li>Possible role reassessment</li>
+      <li>Department-wide performance impact</li>
+    </ul>
+  </div>
+
+  <div style="margin-top: 30px; padding-top: 20px; border-top: 3px solid #d32f2f;">
+    <p><strong>Quality Assurance Department</strong></p>
+    <p>This is an automated SLA monitoring notification.</p>
+    <p style="font-size: 11px; color: #666;">
+      This breach will be recorded in the quality management system and may be reviewed during performance evaluations.
+    </p>
+  </div>
+</div>
+</body>
+</html>

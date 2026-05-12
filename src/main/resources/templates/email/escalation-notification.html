@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Escalation Required</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #FF9800;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #fff8e1;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+        }
+        .alert-box {
+            background-color: #ffecb3;
+            border: 2px solid #ff9800;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .priority {
+            background-color: #ff5722;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .details {
+            background-color: white;
+            border: 1px solid #ff9800;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .action-required {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🚨 Action Required: Application Escalation</h1>
+</div>
+
+<div class="content">
+    <div class="alert-box">
+        <h2><span class="priority">HIGH PRIORITY</span></h2>
+        <p><strong>Immediate attention required for application escalation.</strong></p>
+    </div>
+
+    <h2>Dear Approver,</h2>
+
+    <p>A loan application requires your review and has been escalated to your level:</p>
+
+    <div class="details">
+        <h3>Escalation Details</h3>
+        <p><strong>Application Number:</strong> <span th:text="${applicationNumber}">N/A</span></p>
+        <p><strong>Escalated By:</strong> <span th:text="${escalatedBy}">N/A</span></p>
+        <p><strong>New Approval Level:</strong> Level <span th:text="${newLevel}">N/A</span></p>
+        <p><strong>Reason for Escalation:</strong> Application exceeds previous approver's authority limit</p>
+        <p><strong>Escalation Time:</strong> <span th:text="${#temporals.format(date, 'dd MMM yyyy, HH:mm')}">N/A</span></p>
+    </div>
+
+    <div class="action-required">
+        <h3>⚠️ Action Required</h3>
+        <p>Please review this application within the next <strong>24 hours</strong> to avoid SLA breach.</p>
+        <p>This application is now pending your decision.</p>
+    </div>
+
+    <p>Click below to review the application:</p>
+
+    <a th:href="${applicationUrl}" class="button">Review Application Now</a>
+
+    <h3>Next Steps:</h3>
+    <ol>
+        <li>Review the complete application details</li>
+        <li>Check all supporting documents</li>
+        <li>Verify risk assessment and compliance</li>
+        <li>Make your approval decision</li>
+    </ol>
+
+    <p><strong>Note:</strong> If you're unable to process this escalation, please forward it to the appropriate authority.</p>
+
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ff9800;">
+        <p><strong>Microfinance System - Escalation Management</strong></p>
+        <p>This is an automated escalation notification. Please do not ignore.</p>
+    </div>
+</div>
+</body>
+</html>

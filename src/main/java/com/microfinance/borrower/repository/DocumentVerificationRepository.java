@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface DocumentVerificationRepository extends JpaRepository<DocumentVerification, Long> {
@@ -46,4 +47,16 @@ public interface DocumentVerificationRepository extends JpaRepository<DocumentVe
     Optional<DocumentVerification> findActiveByBorrowerIdAndDocumentType(
             @Param("borrowerId") Long borrowerId,
             @Param("documentType") DocumentConfig.DocumentType documentType);
+
+    boolean existsByBorrowerIdAndDocumentTypeInAndVerificationStatus(
+            Long borrowerId,
+            List<DocumentConfig.DocumentType> documentTypes,
+            DocumentVerification.VerificationStatus verificationStatus);
+
+    @Query("SELECT MAX(dv.verificationDate) FROM DocumentVerification dv WHERE dv.borrower.id = :borrowerId AND dv.documentType IN :documentTypes AND dv.verificationStatus = 'VERIFIED'")
+    LocalDateTime findLatestVerificationDateByBorrowerAndTypes(@Param("borrowerId") Long borrowerId,
+                                                               @Param("documentTypes") List<String> documentTypes);
+
+
+    List<DocumentVerification> findByBorrowerIdAndIsActiveTrue(Long borrowerId);
 }

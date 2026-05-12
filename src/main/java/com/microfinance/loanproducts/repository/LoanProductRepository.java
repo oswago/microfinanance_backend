@@ -1,5 +1,6 @@
 package com.microfinance.loanproducts.repository;
 
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.entity.LoanProduct;
 import com.microfinance.loanproducttype.entity.ProductType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,18 +20,18 @@ public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> 
     boolean existsByName(String name);
     
     List<LoanProduct> findByActiveTrue();
-    List<LoanProduct> findByActiveTrueAndStatus(LoanProduct.ProductStatus status);
-    List<LoanProduct> findByStatus(LoanProduct.ProductStatus status);
+    List<LoanProduct> findByActiveTrueAndStatus(GeneralConfig.ProductStatus status);
+    List<LoanProduct> findByStatus(GeneralConfig.ProductStatus status);
     List<LoanProduct> findByIsTemplateTrueAndActiveTrue();
     
     List<LoanProduct> findByNameContainingAndActiveTrue(String name);
     List<LoanProduct> findByProductTypeAndActiveTrue(ProductType productType);
-    List<LoanProduct> findByInterestMethodAndActiveTrue(LoanProduct.InterestMethod interestMethod);
+    List<LoanProduct> findByInterestMethodAndActiveTrue(GeneralConfig.InterestMethod interestMethod);
     
     List<LoanProduct> findByNameContainingAndProductTypeAndActiveTrue(String name, ProductType productType);
-    List<LoanProduct> findByNameContainingAndInterestMethodAndActiveTrue(String name, LoanProduct.InterestMethod interestMethod);
+    List<LoanProduct> findByNameContainingAndInterestMethodAndActiveTrue(String name, GeneralConfig.InterestMethod interestMethod);
     List<LoanProduct> findByNameContainingAndProductTypeAndInterestMethodAndActiveTrue(
-            String name, ProductType productType, LoanProduct.InterestMethod interestMethod);
+            String name, ProductType productType, GeneralConfig.InterestMethod interestMethod);
     
     Optional<LoanProduct> findByProductCodeAndActiveTrue(String productCode);
     
@@ -51,8 +53,40 @@ public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> 
     List<LoanProduct> searchLoanProducts(
             @Param("name") String name,
             @Param("productTypeId") Long productTypeId,
-            @Param("interestMethod") LoanProduct.InterestMethod interestMethod);
+            @Param("interestMethod") GeneralConfig.InterestMethod interestMethod);
 
     List<LoanProduct> findByProductTypeIdAndActiveTrue(Long productTypeId);
+
+
+    @Query("""
+        SELECT 
+            lp.productType,
+            lp.name,
+            lp.productCode,
+            COUNT(la.id) as totalApplications,
+            SUM(CASE WHEN la.status = 'APPROVED' THEN 1 ELSE 0 END) as approvedCount,
+            SUM(CASE WHEN la.status = 'REJECTED' THEN 1 ELSE 0 END) as rejectedCount,
+            AVG(CASE WHEN aa.decisionDate IS NOT NULL AND aa.createdAt IS NOT NULL 
+                 THEN TIMESTAMPDIFF(HOUR, aa.createdAt, aa.decisionDate) END) as avgProcessingTime,
+            AVG(la.appliedAmount) as avgApprovedAmount,
+            SUM(CASE WHEN la.status = 'APPROVED' THEN la.appliedAmount ELSE 0 END) as totalApprovedAmount,
+            AVG(la.riskScore) as avgRiskScore
+        FROM LoanProduct lp
+        LEFT JOIN LoanApplication la ON la.loanProduct = lp
+        LEFT JOIN ApplicationApproval aa ON aa.loanApplication = la
+        WHERE la.submittedDate BETWEEN :startDate AND :endDate
+        AND (:branchId IS NULL OR la.branch.id = :branchId)
+        AND la.submittedDate IS NOT NULL
+        GROUP BY lp.productType, lp.name, lp.productCode
+        ORDER BY totalApplications DESC
+    """)
+    List<Object[]> findProductApprovalStats(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("branchId") Long branchId);
+
+
+
+
 
 }

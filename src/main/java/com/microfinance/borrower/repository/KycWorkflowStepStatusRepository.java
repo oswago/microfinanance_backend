@@ -77,4 +77,21 @@ public interface KycWorkflowStepStatusRepository extends JpaRepository<KycWorkfl
      * Find steps by workflow ID and step status - simplified version
      */
     List<KycWorkflowStepStatus> findByKycWorkflowIdAndStatusOrderById(Long kycWorkflowId, KycWorkflowStepStatus.StepStatus status);
+
+
+        @Query("SELECT s FROM KycWorkflowStepStatus s WHERE s.kycWorkflow.borrower.id = :borrowerId")
+        List<KycWorkflowStepStatus> findByKycWorkflowBorrowerId(@Param("borrowerId") Long borrowerId);
+
+        // Or if you want to be more specific:
+        @Query("SELECT s FROM KycWorkflowStepStatus s JOIN FETCH s.kycWorkflow WHERE s.kycWorkflow.borrower.id = :borrowerId")
+        List<KycWorkflowStepStatus> findByKycWorkflowBorrowerIdWithWorkflow(@Param("borrowerId") Long borrowerId);
+
+    @Query("SELECT COUNT(s) > 0 FROM KycWorkflowStepStatus s WHERE s.kycWorkflow.borrower.id = :borrowerId AND s.step = :step AND s.status = :status")
+    boolean existsByKycWorkflowBorrowerIdAndStepAndStatus(
+            @Param("borrowerId") Long borrowerId,
+            @Param("step") KycWorkflowStep step,
+            @Param("status") KycWorkflowStepStatus.StepStatus status);
+
+
+
 }

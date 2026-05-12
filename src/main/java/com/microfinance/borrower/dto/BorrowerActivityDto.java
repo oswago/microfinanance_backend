@@ -2,24 +2,31 @@ package com.microfinance.borrower.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.microfinance.borrower.entity.BorrowerActivity;
+import com.microfinance.common.config.GeneralConfig;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BorrowerActivityDto {
     private Long id;
     private Long borrowerId;
     private String borrowerName;
-    private ActivityType activityType;
+    private GeneralConfig.BorrowerActivityType activityType;
     private String description;
     private String details;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime activityDate;
-    
+
     private Long performedBy;
     private String performedByName;
     private String referenceType;
@@ -85,31 +92,30 @@ public class BorrowerActivityDto {
     // Conversion methods
     public static BorrowerActivityDto fromEntity(BorrowerActivity entity) {
         if (entity == null) return null;
-        
-        BorrowerActivityDto dto = new BorrowerActivityDto();
-        dto.setId(entity.getId());
-        dto.setBorrowerId(entity.getBorrower().getId());
-        dto.setBorrowerName(entity.getBorrower().getFullName());
-        dto.setActivityType(ActivityType.valueOf(entity.getActivityType().name()));
-        dto.setDescription(entity.getDescription());
-        dto.setDetails(entity.getDetails());
-        dto.setActivityDate(entity.getActivityDate());
-        dto.setPerformedBy(entity.getPerformedBy());
-        dto.setPerformedByName(entity.getPerformedByName());
-        dto.setReferenceType(entity.getReferenceType());
-        dto.setReferenceId(entity.getReferenceId());
-        dto.setReferenceNumber(entity.getReferenceNumber());
-        dto.setBranchName(entity.getBranchName());
-        dto.setIpAddress(entity.getIpAddress());
-        dto.setUserAgent(entity.getUserAgent());
-        dto.setSessionId(entity.getSessionId());
-        
-        return dto;
+
+        return BorrowerActivityDto.builder()
+                .id(entity.getId())
+                .borrowerId(entity.getBorrower().getId())
+                .borrowerName(entity.getBorrower().getFullName())
+                .activityType(GeneralConfig.BorrowerActivityType.valueOf(entity.getActivityType().name()))
+                .description(entity.getDescription())
+                .details(entity.getDetails())
+                .activityDate(entity.getActivityDate())
+                .performedBy(entity.getPerformedBy())
+                .performedByName(entity.getPerformedByName())
+                .referenceType(entity.getReferenceType())
+                .referenceId(entity.getReferenceId())
+                .referenceNumber(entity.getReferenceNumber())
+                .branchName(entity.getBranchName())
+                .ipAddress(entity.getIpAddress())
+                .userAgent(entity.getUserAgent())
+                .sessionId(entity.getSessionId())
+                .build();
     }
 
     public BorrowerActivity toEntity() {
         BorrowerActivity entity = new BorrowerActivity();
-        entity.setActivityType(BorrowerActivity.ActivityType.valueOf(this.activityType.name()));
+        entity.setActivityType(GeneralConfig.BorrowerActivityType.valueOf(this.activityType.name()));
         entity.setDescription(this.description);
         entity.setDetails(this.details);
         entity.setActivityDate(this.activityDate != null ? this.activityDate : LocalDateTime.now());
@@ -122,22 +128,25 @@ public class BorrowerActivityDto {
         entity.setIpAddress(this.ipAddress);
         entity.setUserAgent(this.userAgent);
         entity.setSessionId(this.sessionId);
-        
+
         return entity;
     }
 
     // TimelineGroup inner class
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class TimelineGroup {
         private String period;
         private LocalDate startDate;
         private LocalDate endDate;
         private List<BorrowerActivityDto> activities;
         private Integer activityCount;
-        
+
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime earliestActivity;
-        
+
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime latestActivity;
 
@@ -145,16 +154,16 @@ public class BorrowerActivityDto {
             this.period = period;
             this.activities = activities;
             this.activityCount = activities != null ? activities.size() : 0;
-            
+
             if (activities != null && !activities.isEmpty()) {
                 this.earliestActivity = activities.stream()
-                    .map(BorrowerActivityDto::getActivityDate)
-                    .min(LocalDateTime::compareTo)
-                    .orElse(null);
+                        .map(BorrowerActivityDto::getActivityDate)
+                        .min(LocalDateTime::compareTo)
+                        .orElse(null);
                 this.latestActivity = activities.stream()
-                    .map(BorrowerActivityDto::getActivityDate)
-                    .max(LocalDateTime::compareTo)
-                    .orElse(null);
+                        .map(BorrowerActivityDto::getActivityDate)
+                        .max(LocalDateTime::compareTo)
+                        .orElse(null);
             }
         }
     }

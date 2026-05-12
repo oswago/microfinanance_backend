@@ -1,11 +1,10 @@
 // src/main/java/com/microfinance/common/config/DocumentConfig.java
 package com.microfinance.common.config;
 
+import com.microfinance.borrower.enums.KycWorkflowStep;
 import lombok.Getter;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DocumentConfig {
@@ -18,27 +17,29 @@ public class DocumentConfig {
         VOTERS_ID("Voter's ID", "IDENTITY", false, "ID_CARD"),
 
         // Address Proof
-        UTILITY_BILL("Utility Bill", "ADDRESS", true, "BILL"),
+        UTILITY_BILL("Utility Bill", "ADDRESS", false, "BILL"),
         RENTAL_AGREEMENT("Rental Agreement", "ADDRESS", false, "AGREEMENT"),
         LEASE_AGREEMENT("Lease Agreement", "ADDRESS", false, "AGREEMENT"),
 
         // Income Proof
-        PAYSLIP("Payslip", "INCOME", true, "SALARY"),
-        BANK_STATEMENT("Bank Statement", "INCOME", true, "STATEMENT"),
+        PAYSLIP("Payslip", "INCOME", false, "SALARY"),
+        BANK_STATEMENT("Bank Statement", "INCOME", false, "STATEMENT"),
         TAX_RETURN("Tax Return", "INCOME", false, "TAX"),
         BUSINESS_REGISTRATION("Business Registration", "INCOME", false, "CERTIFICATE"),
 
         // Employment
-        EMPLOYMENT_LETTER("Employment Letter", "EMPLOYMENT", true, "LETTER"),
+        EMPLOYMENT_LETTER("Employment Letter", "EMPLOYMENT", false, "LETTER"),
         CONTRACT("Employment Contract", "EMPLOYMENT", false, "CONTRACT"),
 
         // Personal
-        PHOTOGRAPH("Photograph", "PERSONAL", true, "PHOTO"),
-        SIGNATURE_CARD("Signature Card", "PERSONAL", true, "SIGNATURE"),
+        PHOTOGRAPH("Photograph", "PERSONAL", false, "PHOTO"),
+        SIGNATURE_CARD("Signature Card", "PERSONAL", false, "SIGNATURE"),
 
         // Business Documents
         BUSINESS_LICENSE("Business License", "BUSINESS", false, "LICENSE"),
         PERMIT("Business Permit", "BUSINESS", false, "PERMIT");
+
+
 
         @Getter
         private final String displayName;
@@ -55,7 +56,30 @@ public class DocumentConfig {
             this.required = required;
             this.icon = icon;
         }
+
+        public static DocumentType fromDisplayName(String displayName) {
+            if (displayName == null) return null;
+
+            for (DocumentType type : DocumentType.values()) {
+                // Access displayName through the instance 'type'
+                if (type.displayName.equalsIgnoreCase(displayName)) {
+                    return type;
+                }
+            }
+
+            // Try direct enum name match as fallback
+            try {
+                return DocumentType.valueOf(displayName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+
     }
+
+
+
 
     public enum DocumentStatus {
         PENDING, VERIFIED, REJECTED, EXPIRED
@@ -66,8 +90,7 @@ public class DocumentConfig {
         // KYC Use Cases
         BASIC_KYC("Basic KYC", Set.of(
             DocumentType.NATIONAL_ID,
-            DocumentType.PHOTOGRAPH,
-            DocumentType.UTILITY_BILL
+            DocumentType.PHOTOGRAPH
         )),
 
         FULL_KYC("Full KYC", Set.of(
@@ -122,6 +145,7 @@ public class DocumentConfig {
             this.requiredDocuments = requiredDocuments;
         }
     }
+
 
     // Enhanced DocumentUtils with Use Case Support
     public static class DocumentUtils {
@@ -204,5 +228,37 @@ public class DocumentConfig {
         public static Set<DocumentType> getLargeLoanDocuments() {
             return DocumentUseCase.LARGE_LOAN.getRequiredDocuments();
         }
+
+        public static Set<KycWorkflowStep> getCompulsorySteps() {
+            return Set.of(
+                    KycWorkflowStep.INITIATE_KYC,
+                    KycWorkflowStep.RISK_ASSESSMENT,
+                    KycWorkflowStep.OFFICER_APPROVAL,
+                    KycWorkflowStep.MANAGER_APPROVAL,
+                    KycWorkflowStep.KYC_COMPLETION
+            );
+        }
+
+        public static Map<String, List<KycWorkflowStep>> getDocumentStepMap() {
+            return Map.of(
+                    "PASSPORT", List.of(KycWorkflowStep.UPLOAD_ID_PROOF, KycWorkflowStep.VERIFY_ID_PROOF),
+                    "NATIONAL_ID", List.of(KycWorkflowStep.UPLOAD_ID_PROOF, KycWorkflowStep.VERIFY_ID_PROOF),
+                    "DRIVERS_LICENSE", List.of(KycWorkflowStep.UPLOAD_ID_PROOF, KycWorkflowStep.VERIFY_ID_PROOF),
+                    "UTILITY_BILL", List.of(KycWorkflowStep.UPLOAD_ADDRESS_PROOF, KycWorkflowStep.VERIFY_ADDRESS_PROOF),
+                    "BANK_STATEMENT", List.of(
+                            KycWorkflowStep.UPLOAD_ADDRESS_PROOF,
+                            KycWorkflowStep.UPLOAD_INCOME_PROOF,
+                            KycWorkflowStep.VERIFY_ADDRESS_PROOF,
+                            KycWorkflowStep.VERIFY_INCOME_PROOF
+                    ),
+                    "RENTAL_AGREEMENT", List.of(KycWorkflowStep.UPLOAD_ADDRESS_PROOF, KycWorkflowStep.VERIFY_ADDRESS_PROOF),
+                    "PAYSLIP", List.of(KycWorkflowStep.UPLOAD_INCOME_PROOF, KycWorkflowStep.VERIFY_INCOME_PROOF),
+                    "TAX_RETURN", List.of(KycWorkflowStep.UPLOAD_INCOME_PROOF, KycWorkflowStep.VERIFY_INCOME_PROOF),
+                    "PHOTOGRAPH", List.of(KycWorkflowStep.UPLOAD_PHOTOGRAPH, KycWorkflowStep.VERIFY_PHOTOGRAPH)
+
+            );
+        }
+
+
     }
 }

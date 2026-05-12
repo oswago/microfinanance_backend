@@ -28,6 +28,7 @@ public class Branch extends BaseEntity {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_branch_id")
+    @JsonIgnore
     private Branch parentBranch;
     
     @OneToMany(mappedBy = "parentBranch", cascade = CascadeType.ALL)
@@ -50,7 +51,9 @@ public class Branch extends BaseEntity {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
-    
+
+
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

@@ -1,5 +1,6 @@
 package com.microfinance.base.service;
 
+import com.microfinance.base.entity.RolePermission;
 import com.microfinance.base.entity.User;
 import com.microfinance.base.repository.UserRepository;
 import com.microfinance.base.security.UserPrincipal;
@@ -11,12 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RolePermissionService rolePermissionService; // Add this
 
     @Override
     @Transactional(readOnly = true)
@@ -32,7 +35,10 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User account is temporarily locked");
         }
 
-        return new UserPrincipal(user);
+        // Get user permissions
+        List<RolePermission> permissions = rolePermissionService.getPermissionsForRole(user.getRole());
+
+        return new UserPrincipal(user,permissions);
     }
 
     @Transactional

@@ -108,4 +108,8 @@ public interface KycWorkflowRepository extends JpaRepository<KycWorkflow, Long> 
     @Query("SELECT k FROM KycWorkflow k WHERE k.currentState = :state AND k.updatedAt < :thresholdDate")
     List<KycWorkflow> findWorkflowsNeedingAttention(@Param("state") KycWorkflowState state, 
                                                    @Param("thresholdDate") LocalDateTime thresholdDate);
+
+    @Query("SELECT w FROM KycWorkflow w LEFT JOIN FETCH w.stepStatuses WHERE w.borrower.id = :borrowerId")
+    Optional<KycWorkflow> findByBorrowerIdWithSteps(@Param("borrowerId") Long borrowerId);
+
 }

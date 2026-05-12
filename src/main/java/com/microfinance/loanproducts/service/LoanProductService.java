@@ -2,6 +2,7 @@ package com.microfinance.loanproducts.service;
 
 import com.microfinance.base.security.UserPrincipal;
 import com.microfinance.base.utils.SecurityUtils;
+import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.dto.LoanProductCreateRequest;
 import com.microfinance.loanproducts.dto.LoanProductUpdateRequest;
 import com.microfinance.loanproducts.entity.LoanProduct;
@@ -60,7 +61,7 @@ public class LoanProductService {
         product.setMinCreditScore(createRequest.getMinCreditScore());
         product.setEligibilityCriteria(createRequest.getEligibilityCriteria());
         product.setRequiredDocuments(createRequest.getRequiredDocuments());
-        product.setStatus(LoanProduct.ProductStatus.ACTIVE);
+        product.setStatus(GeneralConfig.ProductStatus.ACTIVE);
         product.setVersion(1);
         product.setIsTemplate(false);
         product.setCreatedAt(LocalDateTime.now());
@@ -71,7 +72,7 @@ public class LoanProductService {
     }
 
     public List<LoanProduct> getAllActiveLoanProducts() {
-        return loanProductRepository.findByActiveTrueAndStatus(LoanProduct.ProductStatus.ACTIVE);
+        return loanProductRepository.findByActiveTrueAndStatus(GeneralConfig.ProductStatus.ACTIVE);
     }
 
     public LoanProduct getLoanProductById(Long id) {
@@ -139,7 +140,7 @@ public class LoanProductService {
         newVersion.setMinCreditScore(updateRequest.getMinCreditScore() != null ? updateRequest.getMinCreditScore() : existingProduct.getMinCreditScore());
         newVersion.setEligibilityCriteria(updateRequest.getEligibilityCriteria() != null ? updateRequest.getEligibilityCriteria() : existingProduct.getEligibilityCriteria());
         newVersion.setRequiredDocuments(updateRequest.getRequiredDocuments() != null ? updateRequest.getRequiredDocuments() : existingProduct.getRequiredDocuments());
-        newVersion.setStatus(LoanProduct.ProductStatus.ACTIVE);
+        newVersion.setStatus(GeneralConfig.ProductStatus.ACTIVE);
         newVersion.setVersion(existingProduct.getVersion() + 1);
         newVersion.setPreviousVersionId(existingProduct.getId());
         newVersion.setIsTemplate(false);
@@ -148,7 +149,7 @@ public class LoanProductService {
         newVersion.setCreatedBy(getCurrentUserId());
 
         // Archive the old version
-        existingProduct.setStatus(LoanProduct.ProductStatus.ARCHIVED);
+        existingProduct.setStatus(GeneralConfig.ProductStatus.ARCHIVED);
         existingProduct.setUpdatedAt(LocalDateTime.now());
         existingProduct.setUpdatedBy(getCurrentUserId());
         loanProductRepository.save(existingProduct);
@@ -226,7 +227,7 @@ public class LoanProductService {
     @Transactional
     public void archiveLoanProduct(Long id) {
         LoanProduct product = getLoanProductById(id);
-        product.setStatus(LoanProduct.ProductStatus.ARCHIVED);
+        product.setStatus(GeneralConfig.ProductStatus.ARCHIVED);
         product.setActive(false);
         product.setUpdatedAt(LocalDateTime.now());
         product.setUpdatedBy(getCurrentUserId());
@@ -236,7 +237,7 @@ public class LoanProductService {
     @Transactional
     public LoanProduct activateLoanProduct(Long id) {
         LoanProduct product = getLoanProductById(id);
-        product.setStatus(LoanProduct.ProductStatus.ACTIVE);
+        product.setStatus(GeneralConfig.ProductStatus.ACTIVE);
         product.setActive(true);
         product.setUpdatedAt(LocalDateTime.now());
         product.setUpdatedBy(getCurrentUserId());
@@ -246,14 +247,14 @@ public class LoanProductService {
     @Transactional
     public LoanProduct deactivateLoanProduct(Long id) {
         LoanProduct product = getLoanProductById(id);
-        product.setStatus(LoanProduct.ProductStatus.INACTIVE);
+        product.setStatus(GeneralConfig.ProductStatus.INACTIVE);
         product.setActive(false);
         product.setUpdatedAt(LocalDateTime.now());
         product.setUpdatedBy(getCurrentUserId());
         return loanProductRepository.save(product);
     }
 
-    public List<LoanProduct> getLoanProductsByStatus(LoanProduct.ProductStatus status) {
+    public List<LoanProduct> getLoanProductsByStatus(GeneralConfig.ProductStatus status) {
         return loanProductRepository.findByStatus(status);
     }
 
@@ -286,7 +287,7 @@ public class LoanProductService {
         template.setMinCreditScore(original.getMinCreditScore());
         template.setEligibilityCriteria(original.getEligibilityCriteria());
         template.setRequiredDocuments(original.getRequiredDocuments());
-        template.setStatus(LoanProduct.ProductStatus.ACTIVE);
+        template.setStatus(GeneralConfig.ProductStatus.ACTIVE);
         template.setVersion(1);
         template.setIsTemplate(true);
         template.setCreatedAt(LocalDateTime.now());
@@ -296,7 +297,7 @@ public class LoanProductService {
         return loanProductRepository.save(template);
     }
 
-    public List<LoanProduct> searchLoanProducts(String name, Long productTypeId, LoanProduct.InterestMethod interestMethod) {
+    public List<LoanProduct> searchLoanProducts(String name, Long productTypeId, GeneralConfig.InterestMethod interestMethod) {
         // ✅ Validate productTypeId exists if provided
         if (productTypeId != null) {
             productTypeService.getProductTypeById(productTypeId);
@@ -325,7 +326,7 @@ public class LoanProductService {
         }
     }
 
-    public List<LoanProduct> searchLoanProductsByCode(String name, String productTypeCode, LoanProduct.InterestMethod interestMethod) {
+    public List<LoanProduct> searchLoanProductsByCode(String name, String productTypeCode, GeneralConfig.InterestMethod interestMethod) {
         Long productTypeId = null;
         if (productTypeCode != null) {
             ProductType productType = productTypeService.getProductTypeByCode(productTypeCode);

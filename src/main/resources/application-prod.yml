@@ -106,7 +106,7 @@ app:
       login-attempts: 5
       window-minutes: 1
   system:
-    company-name: "Microfinance System"
+    company-name: "Finite System"
     auto-backup:
       enabled: true
       schedule: "0 0 2 * * ?"  # Daily at 2 AM

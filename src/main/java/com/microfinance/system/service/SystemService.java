@@ -1,5 +1,6 @@
 package com.microfinance.system.service;
 
+import com.microfinance.base.entity.User;
 import com.microfinance.system.dto.BranchRequest;
 import com.microfinance.system.entity.*;
 
@@ -48,4 +49,6 @@ public interface SystemService {
     HolidayCalendar updateHoliday(Long id, HolidayCalendar holiday);
 
     NumberSequence createNumberSequence(NumberSequence numberSequence);
+
+    Branch getBranchForUser(User currentUser);
 }

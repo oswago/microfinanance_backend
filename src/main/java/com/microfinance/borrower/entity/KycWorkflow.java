@@ -1,5 +1,6 @@
 package com.microfinance.borrower.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microfinance.base.entity.BaseEntity;
 import com.microfinance.borrower.enums.KycWorkflowState;
 import com.microfinance.borrower.enums.KycWorkflowStep;
@@ -17,8 +18,13 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class KycWorkflow extends BaseEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_id", nullable = false)
+    @JsonIgnore // Add this
     private Borrower borrower;
 
     @Enumerated(EnumType.STRING)
@@ -54,9 +60,11 @@ public class KycWorkflow extends BaseEntity {
     private String assignedOfficerName;
 
     @OneToMany(mappedBy = "kycWorkflow", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore  // ADD THIS - CRITICAL
     private List<KycWorkflowHistory> history = new ArrayList<>();
 
     @OneToMany(mappedBy = "kycWorkflow", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore  // ADD THIS - CRITICAL
     private List<KycWorkflowStepStatus> stepStatuses = new ArrayList<>();
 
     // Helper methods

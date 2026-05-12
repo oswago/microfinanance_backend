@@ -5,6 +5,7 @@ import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.borrower.entity.BorrowerActivity;
 import com.microfinance.borrower.repository.BorrowerActivityRepository;
 import com.microfinance.borrower.repository.BorrowerRepository;
+import com.microfinance.common.config.GeneralConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -102,10 +103,12 @@ public class BorrowerActivityService {
         }
     }
 
+
+
     // Helper method for quick activity logging
     @Transactional
-    public void logQuickActivity(Long borrowerId, BorrowerActivityDto.ActivityType activityType, 
-                                String description, Long performedBy, String referenceType, Long referenceId) {
+    public void logQuickActivity(Long borrowerId, GeneralConfig.BorrowerActivityType activityType,
+                                 String description, Long performedBy, String referenceType, Long referenceId) {
         BorrowerActivityDto activityDto = new BorrowerActivityDto();
         activityDto.setBorrowerId(borrowerId);
         activityDto.setActivityType(activityType);

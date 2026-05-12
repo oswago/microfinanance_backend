@@ -1,6 +1,7 @@
 package com.microfinance.borrower.dto;
 
 import com.microfinance.borrower.entity.Borrower;
+import com.microfinance.common.config.GeneralConfig;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -13,7 +14,7 @@ public class BulkKycVerificationRequest {
     private List<Long> borrowerIds;
     
     @NotNull(message = "KYC status is required")
-    private Borrower.KycStatus kycStatus;
+    private GeneralConfig.KycStatus kycStatus;
     
     private String verificationNotes;
     
@@ -43,11 +44,11 @@ public class BulkKycVerificationRequest {
 
     // Helper method to check if this is a verification (approval) action
     public boolean isVerificationAction() {
-        return kycStatus == Borrower.KycStatus.VERIFIED;
+        return kycStatus == GeneralConfig.KycStatus.VERIFIED;
     }
 
     // Helper method to check if this is a rejection action
     public boolean isRejectionAction() {
-        return kycStatus == Borrower.KycStatus.REJECTED;
+        return kycStatus == GeneralConfig.KycStatus.REJECTED;
     }
 }

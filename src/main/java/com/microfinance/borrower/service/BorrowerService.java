@@ -4,6 +4,7 @@ import com.microfinance.borrower.dto.*;
 import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.borrower.entity.BorrowerDocument;
 import com.microfinance.common.config.DocumentConfig;
+import com.microfinance.common.config.GeneralConfig;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +32,9 @@ public interface BorrowerService {
     
     void deleteBorrower(Long id);
     
-    BorrowerDto updateBorrowerStatus(Long id, Borrower.BorrowerStatus status);
+    BorrowerDto updateBorrowerStatus(Long id, GeneralConfig.BorrowerStatus status);
     
-    BorrowerDto updateKycStatus(Long id, Borrower.KycStatus kycStatus, Long verifiedBy, String notes);
+    BorrowerDto updateKycStatus(Long id, GeneralConfig.KycStatus kycStatus, Long verifiedBy, String notes);
     
     List<BorrowerDto> getBorrowersByGroup(Long groupId);
     
@@ -73,18 +74,10 @@ public interface BorrowerService {
     List<BorrowerDto> getBorrowersEligibleForLoan(Long loanProductId);
     Boolean isBorrowerEligibleForLoan(Long borrowerId, Long loanProductId);
 
-    // KYC workflow methods
-    BorrowerKycSummaryDto getKycSummary(Long borrowerId);
-    List<BorrowerDocumentDto> getMissingRequiredDocuments(Long borrowerId);
-    Boolean isKycComplete(Long borrowerId);
 
     // Portfolio management
     BorrowerPortfolioSummaryDto getPortfolioSummary(Long borrowerId);
     List<BorrowerActivityDto> getRecentActivities(Long borrowerId);
-
-    // Group management
-    BorrowerDto assignToGroup(Long borrowerId, Long groupId);
-    BorrowerDto removeFromGroup(Long borrowerId);
 
     // Activity tracking methods
     BorrowerActivityDto logActivity(BorrowerActivityDto activityDto);
@@ -95,7 +88,7 @@ public interface BorrowerService {
     List<BorrowerActivityDto> getRecentActivities(Long borrowerId, int limit);
 
     // Helper method for common activity logging
-    default BorrowerActivityDto logStandardActivity(Long borrowerId, BorrowerActivityDto.ActivityType activityType,
+    default BorrowerActivityDto logStandardActivity(Long borrowerId, GeneralConfig.BorrowerActivityType activityType,
                                                     String description, Long performedBy, String referenceType, Long referenceId) {
         BorrowerActivityDto activity = new BorrowerActivityDto();
         activity.setBorrowerId(borrowerId);
@@ -110,12 +103,44 @@ public interface BorrowerService {
 
     // Bulk operations
     BulkKycVerificationResponse bulkUpdateKycStatus(BulkKycVerificationRequest request);
-    List<BorrowerDto> bulkUpdateKycStatus(List<Long> borrowerIds, Borrower.KycStatus kycStatus,
+    List<BorrowerDto> bulkUpdateKycStatus(List<Long> borrowerIds, GeneralConfig.KycStatus kycStatus,
                                           Long verifiedBy, String notes);
     BulkKycVerificationResponse bulkKycRejection(List<Long> borrowerIds, String rejectionReason, Long rejectedBy);
     BulkKycVerificationResponse bulkKycVerification(List<Long> borrowerIds, Long verifiedBy);
 
     // In BorrowerService interface
-    List<BorrowerDto> getBorrowersEligibleForKycUpdate(Borrower.KycStatus currentStatus, Boolean documentsUploaded);
+    List<BorrowerDto> getBorrowersEligibleForKycUpdate(GeneralConfig.KycStatus currentStatus, Boolean documentsUploaded);
+
+    /**
+     * Get comprehensive KYC summary for a borrower including document status,
+     * verification progress, and compliance information
+     */
+    BorrowerKycSummaryDto getBorrowerKycSummary(Long borrowerId);
+
+    /**
+     * Get KYC summary for multiple borrowers (batch operation)
+     */
+    List<BorrowerKycSummaryDto> getBorrowerKycSummaries(List<Long> borrowerIds);
+
+    /**
+     * Check if borrower KYC is complete and verified
+     */
+    Boolean isBorrowerKycComplete(Long borrowerId);
+
+
+    List<BorrowerActiveLoanDto> getBorrowerActiveLoans(Long borrowerId);
+
+    List<BorrowerLoanHistoryDto> getBorrowerLoanHistory(Long borrowerId);
+
+    BorrowerStatisticsDto getBorrowerStatistics(Long borrowerId);
+
+    Page<BorrowerActiveLoanDto> getBorrowerActiveLoansPaginated(Long borrowerId, Pageable pageable);
+
+    Page<BorrowerLoanHistoryDto> getBorrowerLoanHistoryPaginated(Long borrowerId, Pageable pageable);
+
+    BorrowerStatisticsDto getBorrowerStatisticsByDateRange(Long borrowerId, LocalDate startDate, LocalDate endDate);
+
+    BorrowerLoanSummaryDto getBorrowerLoanSummary(Long borrowerId);
+
 
 }

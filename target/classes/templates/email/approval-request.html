@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0 0 8px 8px;
+        }
+        .application-details {
+            background: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #6c757d;
+            text-align: center;
+        }
+        .info-item {
+            margin: 8px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Approval Request</h2>
+    </div>
+    <div class="content">
+        <p>Dear <span th:text="${approverName}">Approver</span>,</p>
+
+        <p>You have a new approval request for a loan application that requires your attention.</p>
+
+        <div class="application-details">
+            <div class="info-item">
+                <span class="info-label">Application Number:</span>
+                <span th:text="${applicationNumber}">LA-000001</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Current Level:</span>
+                <span th:text="${currentLevel}">1</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Levels:</span>
+                <span th:text="${totalLevels}">3</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Next Role Required:</span>
+                <span th:text="${nextRole}">Branch Manager</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Previous Approver:</span>
+                <span th:text="${previousApprover}">System</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Comments:</span>
+                <span th:text="${comments}">No comments provided</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Request Date:</span>
+                <span th:text="${#dates.format(requestDate, 'dd MMM yyyy HH:mm')}">2024-01-01 10:00</span>
+            </div>
+        </div>
+
+        <p>Please log in to the system to review and take action on this approval request.</p>
+
+        <div style="text-align: center;">
+            <a th:href="${applicationUrl}" class="button">Review Application</a>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message from Microfinance System. Please do not reply to this email.</p>
+            <p>If you have any questions, please contact <span th:text="${supportEmail}">support@microfinance.com</span></p>
+            <p>&copy; <span th:text="${currentYear}">2024</span> <span th:text="${companyName}">Microfinance System</span>. All rights reserved.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

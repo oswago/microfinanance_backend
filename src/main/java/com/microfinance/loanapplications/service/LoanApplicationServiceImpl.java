@@ -109,14 +109,31 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             createdByName=currentUser1.get().getFullName();
             createdById=currentUser1.get().getId();
         }
+
+
+
+
         if (Objects.nonNull(savedApplication.getId())) {
+            // Build audit message safely
+            StringBuilder auditMessage = new StringBuilder()
+                    .append("Loan Application of ID: ").append(savedApplication.getId());
+            // Safe check for loan
+            if (savedApplication.getLoan() != null) {
+                auditMessage.append(" Loan No: ").append(savedApplication.getLoan().getLoanAccountNumber());
+            } else {
+                auditMessage.append(" (Loan not yet associated)");
+            }
+            auditMessage.append(" has been Created by: ").append(createdByName).append("-").append(createdById);
+
             auditService.masterAuditLogs(
                     savedApplication.getBorrower().getId(),
                     GeneralConfig.BorrowerActivityType.LOAN_APPLICATION_ACTIVITY,
                     "LOAN_APPLICATION",
-                    "Loan Application of ID:"+savedApplication.getId()+" Loan No:"+savedApplication.getLoan().getLoanAccountNumber()+  " has been Created by:"+createdByName+"-"+createdById
+                    auditMessage.toString()
             );
         }
+
+
         //End Audit Section
 
         // Convert to DTO with document references
@@ -442,12 +459,27 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             createdByName=currentUser1.get().getFullName();
             createdById=currentUser1.get().getId();
         }
+
+
         if (Objects.nonNull(savedApplication.getId())) {
+            // Build audit message safely
+            StringBuilder auditMessage = new StringBuilder()
+                    .append("Loan Application of ID: ").append(savedApplication.getId());
+
+            // Safe check for loan
+            if (savedApplication.getLoan() != null) {
+                auditMessage.append(" Loan No: ").append(savedApplication.getLoan().getLoanAccountNumber());
+            } else {
+                auditMessage.append(" (Loan not yet associated)");
+            }
+
+            auditMessage.append(" has been UPDATED by: ").append(createdByName).append("-").append(createdById);
+
             auditService.masterAuditLogs(
                     savedApplication.getBorrower().getId(),
                     GeneralConfig.BorrowerActivityType.LOAN_APPLICATION_ACTIVITY,
                     "LOAN_APPLICATION",
-                    "Loan Application of ID:"+savedApplication.getId()+" Loan No:"+savedApplication.getLoan().getLoanAccountNumber()+  " has been UPDATED by:"+createdByName+"-"+createdById
+                    auditMessage.toString()
             );
         }
         //End Audit Section
@@ -736,19 +768,19 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private LoanApplicationDto enrichWithDocumentInfo(LoanApplication application) {
         LoanApplicationDto dto = loanApplicationMapper.toDto(application);
 
-        log.info("Add borrower document references START  ") ;
+        log.info(">>> Add borrower document references START  ") ;
 
         // Add borrower document references
         List<BorrowerDocumentDto> borrowerDocuments = borrowerService
                 .getBorrowerDocuments(application.getBorrower().getId());
 
-        log.info("Add borrowerDocuments references section : {} ",borrowerDocuments) ;
+        log.info(">>> Add borrowerDocuments references section : {} ",borrowerDocuments) ;
 
         List<BorrowerDocumentReferenceDto> documentReferences = documentComplianceService
                 .convertToReferenceDtos(borrowerDocuments);
         dto.setBorrowerDocuments(documentReferences);
 
-        log.info("Add documentReferences references section: {}  ",documentReferences ) ;
+        log.info(">>> Add documentReferences references section: {}  ",documentReferences ) ;
 
         // Add KYC summary
         BorrowerKycSummaryDto kycSummary = borrowerService

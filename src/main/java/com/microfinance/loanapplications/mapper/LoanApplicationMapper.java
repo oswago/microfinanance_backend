@@ -43,6 +43,9 @@ public interface LoanApplicationMapper {
     
     LoanApplicationDto toDto(LoanApplication application);
 
+
+
+
     List<LoanApplicationDto> toDtoList(List<LoanApplication> applications);
     
     @Named("getBorrowerFullName")

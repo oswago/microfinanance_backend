@@ -1,0 +1,87 @@
+1. ACoounting Entries Set UP
+-- Insert Account Categories first
+INSERT INTO fin_account_categories (code, name, description, account_type, normal_balance, sort_order) VALUES
+('ASSET_C', 'Assets', 'All asset accounts', 'ASSET', 'DEBIT', 10),
+('LIABILITY_C', 'Liabilities', 'All liability accounts', 'LIABILITY', 'CREDIT', 20),
+('EQUITY_C', 'Equity', 'Equity accounts', 'EQUITY', 'CREDIT', 30),
+('INCOME_C', 'Income', 'Income and revenue accounts', 'INCOME', 'CREDIT', 40),
+('EXPENSE_C', 'Expenses', 'Expense accounts', 'EXPENSE', 'DEBIT', 50);
+
+-- Insert Asset Accounts
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '1010', 'Cash on Hand', 'Physical cash in office', c.id, 'ASSET', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'ASSET_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '1020', 'Bank Account - Operating', 'Main operating bank account', c.id, 'ASSET', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'ASSET_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '1110', 'Gross Loan Portfolio', 'Total principal amount of active loans', c.id, 'ASSET', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'ASSET_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '1120', 'Interest Receivable', 'Accrued interest not yet received', c.id, 'ASSET', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'ASSET_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '1310', 'Loan Loss Provision', 'Provision for expected credit losses', c.id, 'ASSET', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'ASSET_C';
+
+-- Insert Liability Accounts
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '2010', 'Accounts Payable', 'Amounts owed to suppliers', c.id, 'LIABILITY', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'LIABILITY_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '2040', 'Tax Payable - Withholding', 'Withholding tax collected', c.id, 'LIABILITY', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'LIABILITY_C';
+
+-- Insert Equity Accounts
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '3010', 'Share Capital', 'Paid-in capital from shareholders', c.id, 'EQUITY', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'EQUITY_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '3110', 'Retained Earnings', 'Cumulative retained profits', c.id, 'EQUITY', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'EQUITY_C';
+
+-- Insert Income Accounts
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '4010', 'Interest Income - Loans', 'Interest earned on loans', c.id, 'INCOME', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'INCOME_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '4030', 'Fee Income - Processing', 'Loan processing fees', c.id, 'INCOME', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'INCOME_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '4110', 'Recovery Income', 'Recoveries from written-off loans', c.id, 'INCOME', 'CREDIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'INCOME_C';
+
+-- Insert Expense Accounts
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '5010', 'Salaries and Wages', 'Employee compensation', c.id, 'EXPENSE', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'EXPENSE_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '5210', 'Provision Expense', 'Provision for loan losses', c.id, 'EXPENSE', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'EXPENSE_C';
+
+INSERT INTO fin_accounts (code, name, description, category_id, account_type, normal_balance, created_at)
+SELECT '5220', 'Write-off Expense', 'Loans written off as uncollectible', c.id, 'EXPENSE', 'DEBIT', NOW()
+FROM fin_account_categories c WHERE c.code = 'EXPENSE_C';
+
+
+2. Journal Entries
+
+Transaction Type	        Debit Account	                  Credit Account
+Loan Disbursement       	Gross Loan Portfolio (1110)	     Cash/Bank (1020/1030)
+Loan Repayment - Principal	Cash/Bank (1020/1030)	         Gross Loan Portfolio (1110)
+Loan Repayment - Interest	Cash/Bank (1020/1030)	         Interest Income (4010)
+Loan Repayment - Fees	    Cash/Bank (1020/1030)     	     Fee Income (4030)
+Loan Repayment - Penalty	Cash/Bank (1020/1030)	         Penalty Income (4060)
+Interest Accrual	        Interest Receivable (1120)	     Interest Income (4010)
+Provision Calculation	    Provision Expense (5210)	      Loan Loss Provision (1310)
+Loan Write-off          	Loan Loss Provision (1310)	      Gross Loan Portfolio (1110)
+Loan Recovery	            Cash/Bank (1020/1030)           	Recovery Income (4110)

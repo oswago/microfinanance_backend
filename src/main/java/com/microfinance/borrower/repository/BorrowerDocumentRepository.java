@@ -2,6 +2,7 @@ package com.microfinance.borrower.repository;
 
 import com.microfinance.borrower.entity.BorrowerDocument;
 import com.microfinance.common.config.DocumentConfig;
+import com.microfinance.common.config.GeneralConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -50,6 +51,15 @@ public interface BorrowerDocumentRepository extends JpaRepository<BorrowerDocume
     @Query("SELECT MAX(bd.createdAt) FROM BorrowerDocument bd WHERE bd.borrower.id = :borrowerId AND bd.documentType IN :documentTypes")
     LocalDateTime findLatestUploadDateByBorrowerAndTypes(@Param("borrowerId") Long borrowerId,
                                                          @Param("documentTypes") List<String> documentTypes);
+
+
+
+    List<BorrowerDocument> findByStatus(DocumentConfig.DocumentStatus status);
+
+    List<BorrowerDocument> findByBorrowerIdAndStatus(Long borrowerId, String status);
+
+    @Query("SELECT d FROM BorrowerDocument d WHERE d.status = :status AND (:branchId IS NULL OR d.borrower.branch.id = :branchId)")
+    List<BorrowerDocument> findByStatusAndBranch(@Param("status") String status, @Param("branchId") Long branchId);
 
 
 

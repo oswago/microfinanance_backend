@@ -137,6 +137,9 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
+
+
+
     @Override
     @Transactional(readOnly = true)
     public PortfolioReportDto generatePortfolioReport(ReportFilterDto filter, User currentUser) {

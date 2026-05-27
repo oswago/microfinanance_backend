@@ -1,7 +1,6 @@
 // entity/FinancialPeriod.java
 package com.microfinance.financials.generalledger.entity;
 
-import com.microfinance.base.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,7 +68,7 @@ public class FinancialPeriod {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "notes")
+    @Column(name = "notes.txt")
     private String notes;
 
     @Column(name = "created_by")

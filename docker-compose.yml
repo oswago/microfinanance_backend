@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - microfinance-network
     healthcheck:
@@ -60,10 +61,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ../frontend  # Adjust path to your Vue frontend
+    build: ../microfinance-frontend  # Adjust path to your Vue frontend
+    image: microfinance-frontend:latest
     container_name: microfinance-frontend
     ports:
-      - "80:80"
+      - "8081:80"
     depends_on:
       - backend
     networks:

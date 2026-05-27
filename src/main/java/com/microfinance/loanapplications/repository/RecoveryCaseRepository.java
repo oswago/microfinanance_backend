@@ -33,12 +33,36 @@ public interface RecoveryCaseRepository extends JpaRepository<RecoveryCase, Long
             "(:stage IS NULL OR rc.currentStage = :stage) AND " +
             "(:priority IS NULL OR rc.priority = :priority) AND " +
             "(:assignedTo IS NULL OR rc.assignedAgent.id = :assignedTo)")
+    Page<RecoveryCase> findAllWithFiltersORG(@Param("search") String search,
+                                          @Param("status") String status,
+                                          @Param("stage") String stage,
+                                          @Param("priority") String priority,
+                                          @Param("assignedTo") Long assignedTo,
+                                          Pageable pageable);
+
+
+
+    @Query("SELECT rc FROM RecoveryCase rc " +
+            "LEFT JOIN FETCH rc.borrower b " +
+            "LEFT JOIN FETCH rc.loan l " +
+            "WHERE (:search IS NULL OR :search = '' OR " +
+            "      LOWER(rc.caseNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(b.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(b.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(l.loanAccountNumber) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "AND (:status IS NULL OR :status = '' OR rc.status = :status) " +
+            "AND (:stage IS NULL OR :stage = '' OR rc.currentStage = :stage) " +
+            "AND (:priority IS NULL OR :priority = '' OR rc.priority = :priority) " +
+            "AND (:assignedTo IS NULL OR rc.assignedAgent.id = :assignedTo)")
     Page<RecoveryCase> findAllWithFilters(@Param("search") String search,
                                           @Param("status") String status,
                                           @Param("stage") String stage,
                                           @Param("priority") String priority,
                                           @Param("assignedTo") Long assignedTo,
                                           Pageable pageable);
+
+
+
 
 
     @Query("SELECT rc.loan.id FROM RecoveryCase rc WHERE rc.status != 'CLOSED'")

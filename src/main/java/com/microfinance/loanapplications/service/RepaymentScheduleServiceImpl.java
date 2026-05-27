@@ -71,6 +71,7 @@ public class RepaymentScheduleServiceImpl implements RepaymentScheduleService {
         return loansPage.map(this::mapLoanToScheduleDto);
     }
 
+
     private RepaymentScheduleDto mapLoanToScheduleDto(Loan loan) {
         if (loan == null) return null;
 

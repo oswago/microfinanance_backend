@@ -804,6 +804,7 @@ public class LoanRepaymentServiceImpl implements LoanRepaymentService {
                 .isFullyPaid(schedule.isFullyPaid())
                 .build();
     }
+
     @Transactional
     private LoanRepaymentDto mapToRepaymentDto(LoanRepayment repayment) {
         if (repayment == null) return null;
@@ -859,6 +860,7 @@ public class LoanRepaymentServiceImpl implements LoanRepaymentService {
 
 
     @Override
+    @Transactional(readOnly = true)  // Add this to the public method
     public List<LoanRepaymentDto> getRecentRepayments(int limit) {
         log.info("Fetching {} recent repayments", limit);
 

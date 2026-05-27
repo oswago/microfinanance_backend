@@ -129,10 +129,24 @@ public interface LoanRescheduleRepository extends JpaRepository<LoanReschedule, 
             "WHERE CAST(approval_date AS DATE) BETWEEN :startDate AND :endDate " +
             "AND status = 'APPROVED'",
             nativeQuery = true)
+    Double getAverageProcessingTimeBK(@Param("startDate") LocalDate startDate,
+                                    @Param("endDate") LocalDate endDate);
+
+
+
+    @Query(value = """
+    SELECT AVG(EXTRACT(EPOCH FROM (CAST(approval_date AS timestamp) - CAST(request_date AS timestamp))))
+    FROM loan_reschedules
+    WHERE CAST(approval_date AS date) BETWEEN :startDate AND :endDate
+      AND status = 'APPROVED'
+    """,
+            nativeQuery = true)
     Double getAverageProcessingTime(@Param("startDate") LocalDate startDate,
                                     @Param("endDate") LocalDate endDate);
 
+
     // Alternative if you want hours instead of seconds
+    /*
     @Query(value = "SELECT AVG(DATEDIFF('HOUR', request_date, approval_date)) " +
             "FROM loan_reschedules " +
             "WHERE DATE(approval_date) BETWEEN :startDate AND :endDate " +
@@ -140,6 +154,14 @@ public interface LoanRescheduleRepository extends JpaRepository<LoanReschedule, 
             nativeQuery = true)
     Double getAverageProcessingTimeHours(@Param("startDate") LocalDate startDate,
                                          @Param("endDate") LocalDate endDate);
+*/
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (approval_date - request_date))) / 3600.0 " +
+            "FROM loan_reschedules " +
+            "WHERE DATE(approval_date) BETWEEN :startDate AND :endDate " +
+            "AND status = 'APPROVED'",
+            nativeQuery = true)
+    Double getAverageProcessingTimeHours(@Param("startDate") LocalDate startDate,
+                                    @Param("endDate") LocalDate endDate);
 
 
     @Query("SELECT lr FROM LoanReschedule lr WHERE lr.loan.id IN " +

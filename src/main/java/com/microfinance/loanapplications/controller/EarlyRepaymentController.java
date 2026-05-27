@@ -137,7 +137,7 @@ public class EarlyRepaymentController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "requestedDate") String sortBy,
+            @RequestParam(defaultValue = "requested_date") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
 
         log.info("Fetching early repayment requests with filters");

@@ -364,9 +364,16 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
             "AND l.daysDelinquent > 0 " +
             "AND (:branchId IS NULL OR l.branch.id = :branchId) " +
             "AND (:asOfDate IS NULL OR l.disbursementDate <= :asOfDate)")
-    Long countOverdueLoans(@Param("branchId") Long branchId,
+    Long countOverdueLoansORG(@Param("branchId") Long branchId,
                            @Param("asOfDate") LocalDate asOfDate);
 
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.status IN ('ACTIVE', 'OVERDUE') " +
+            "AND l.daysDelinquent > 0 " +
+            "AND (l.branch.id = COALESCE(:branchId, l.branch.id)) " +
+            "AND (l.disbursementDate <= COALESCE(:asOfDate, l.disbursementDate))")
+    Long countOverdueLoans(@Param("branchId") Long branchId,
+                           @Param("asOfDate") LocalDate asOfDate);
 
 
     @Query("SELECT COUNT(l) FROM Loan l WHERE l.status IN ('ACTIVE', 'OVERDUE') " +
@@ -797,6 +804,15 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
             "WHERE l.status IN ('ACTIVE', 'OVERDUE', 'DELINQUENT') " +
             "AND l.daysDelinquent BETWEEN :minDays AND :maxDays " +
             "AND (:asOfDate IS NULL OR l.disbursementDate <= :asOfDate)")
+    BigDecimal sumOutstandingForAgingRangeForReportORG(@Param("minDays") Integer minDays,
+                                                    @Param("maxDays") Integer maxDays,
+                                                    @Param("asOfDate") LocalDate asOfDate);
+
+
+    @Query("SELECT COALESCE(SUM(l.outstandingBalance), 0) FROM Loan l " +
+            "WHERE l.status IN ('ACTIVE', 'OVERDUE', 'DELINQUENT') " +
+            "AND l.daysDelinquent BETWEEN :minDays AND :maxDays " +
+            "AND (l.disbursementDate <= COALESCE(:asOfDate, l.disbursementDate))")
     BigDecimal sumOutstandingForAgingRangeForReport(@Param("minDays") Integer minDays,
                                                     @Param("maxDays") Integer maxDays,
                                                     @Param("asOfDate") LocalDate asOfDate);
@@ -813,6 +829,14 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
             "WHERE l.status IN ('ACTIVE', 'OVERDUE', 'DELINQUENT') " +
             "AND l.daysDelinquent >= :daysOverdue " +
             "AND (:asOfDate IS NULL OR l.disbursementDate <= :asOfDate)")
+    BigDecimal sumOutstandingForOverdueDaysForReportORG(@Param("daysOverdue") Integer daysOverdue,
+                                                     @Param("asOfDate") LocalDate asOfDate);
+
+
+    @Query("SELECT COALESCE(SUM(l.outstandingBalance), 0) FROM Loan l " +
+            "WHERE l.status IN ('ACTIVE', 'OVERDUE', 'DELINQUENT') " +
+            "AND l.daysDelinquent >= :daysOverdue " +
+            "AND (l.disbursementDate <= COALESCE(:asOfDate, l.disbursementDate))")
     BigDecimal sumOutstandingForOverdueDaysForReport(@Param("daysOverdue") Integer daysOverdue,
                                                      @Param("asOfDate") LocalDate asOfDate);
 
@@ -906,6 +930,11 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
 
 
+    List<Loan> findByBranchIdAndStatus(Long branchId, GeneralConfig.LoanStatus status);
+
+    @Query("SELECT l FROM Loan l WHERE (:branchId IS NULL OR l.branch.id = :branchId)")
+    List<Loan> findAllWithBranchFilter(@Param("branchId") Long branchId);
+
     // Add these methods
     @Query("SELECT l FROM Loan l WHERE l.borrower.id = :borrowerId ORDER BY l.createdAt DESC")
     List<Loan> findByBorrowerIdOrderByCreatedAtDesc(@Param("borrowerId") Long borrowerId, Pageable pageable);
@@ -913,6 +942,22 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     @Query("SELECT l FROM Loan l WHERE l.borrower.id = :borrowerId AND l.disbursementDate IS NOT NULL ORDER BY l.disbursementDate DESC")
     List<Loan> findByBorrowerIdAndDisbursementDateNotNullOrderByDisbursementDateDesc(@Param("borrowerId") Long borrowerId, Pageable pageable);
 
+
+    // New methods for reports
+    @Query("SELECT SUM(l.principalAmount) FROM Loan l WHERE l.status IN :statuses AND (:branchId IS NULL OR l.branch.id = :branchId)")
+    BigDecimal sumPrincipalByStatuses(@Param("statuses") List<GeneralConfig.LoanStatus> statuses, @Param("branchId") Long branchId);
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.status IN :statuses AND (:branchId IS NULL OR l.branch.id = :branchId)")
+    Long countByStatuses(@Param("statuses") List<GeneralConfig.LoanStatus> statuses, @Param("branchId") Long branchId);
+
+    @Query("SELECT AVG(l.principalAmount) FROM Loan l WHERE l.status = :status AND (:branchId IS NULL OR l.branch.id = :branchId)")
+    BigDecimal averageLoanAmount(@Param("status") GeneralConfig.LoanStatus status, @Param("branchId") Long branchId);
+
+    @Query("SELECT l.loanProduct.name, COUNT(l), SUM(l.principalAmount) FROM Loan l WHERE (:branchId IS NULL OR l.branch.id = :branchId) GROUP BY l.loanProduct.name")
+    List<Object[]> getLoanProductDistribution(@Param("branchId") Long branchId);
+
+    @Query("SELECT COUNT(DISTINCT l.borrower.id) FROM Loan l WHERE l.status = :status AND (:branchId IS NULL OR l.branch.id = :branchId)")
+    Long countDistinctBorrowersByStatus(@Param("status") GeneralConfig.LoanStatus status, @Param("branchId") Long branchId);
 
 
 

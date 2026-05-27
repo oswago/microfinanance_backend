@@ -91,6 +91,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\service\CollectionServiceImpl.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\DocumentComplianceSummary.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\disbursement\RescheduleEligibilityDto.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\RiskAssessmentReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\collection\ApplyPenaltyDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\reconciliation\repository\BankStatementRepository.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\disbursement\LoanRepaymentDto.java
@@ -132,7 +133,9 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\dto\KycWorkflowDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\collection\DailyCollectionDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\service\PaymentAllocationService.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\controller\ClientReportsController.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\base\utils\SecurityUtils.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\service\ClientReportsService.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\base\service\PermissionCheckService.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\financialreports\dto\InvestingCashFlow.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\BorrowerDocumentReferenceDto.java
@@ -171,6 +174,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\integrations\service\FinancialIntegrationService.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\ApplicationValidationRequest.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\generalledger\dto\GeneralLedgerDto.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\ReportHistoryDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\financialreports\dto\OtherIncomeSection.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\collection\CancelNoticeDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\reconciliation\entity\BankAccount.java
@@ -219,6 +223,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\provisions\service\ProvisionService.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\controller\RecoveryWorkflowController.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\dto\DocumentSyncResponse.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\service\ClientReportsServiceImpl.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\base\dto\MfaBackupCodesResponse.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\OverdueLoanDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\budget\dto\ForecastRequestDTO.java
@@ -338,6 +343,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\exception\BusinessException.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\repository\LoanRepository.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\disbursement\BulkDisbursementResponseDto.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\ClientDemographicsReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\dto\FinancialReportDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\disbursement\PortfolioSummaryDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\common\service\DocumentConfigService.java
@@ -372,6 +378,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\dashboard\dto\RepaymentPerformanceDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\financialreports\dto\LedgerEntry.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\system\repository\BranchRepository.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\KycStatusReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\dto\AuditReportDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\ApplicationStatsDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\repository\BorrowerGroupRepository.java
@@ -475,6 +482,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\LoanRestructureResponseDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\dto\BorrowerSummaryDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\base\entity\UserSession.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\GroupPerformanceReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\service\LoanRepaymentService.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\repayment\InstallmentPaymentDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\financials\generalledger\entity\GeneralLedger.java
@@ -526,6 +534,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\common\config\GeneralConfig.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\dto\KycWorkflowStepDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\collection\TaskAssignmentRequestDto.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\PortfolioSummaryReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\collection\StageStatisticsDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\entity\ApprovalComment.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\mapper\ApprovalMapper.java
@@ -547,6 +556,7 @@ C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\ma
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\approval\ApprovalReminderDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\service\ReportServiceImpl.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\reports\dto\ReportStatisticsDto.java
+C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\report\ActivityReport.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\entity\LoanDocument.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\loanapplications\dto\approval\ApprovalStatsDto.java
 C:\OTHER_WORKS\PRJ_MICRO\MICRO\microfinance_enhanced\microfinance-backend\src\main\java\com\microfinance\borrower\dto\DocumentTypeDto.java

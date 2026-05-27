@@ -201,14 +201,29 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 createdByName=currentUser1.get().getFullName();
                 createdById=currentUser1.get().getId();
             }
+
+
             if (Objects.nonNull(savedApp.getId())) {
+                // Build audit message safely
+                StringBuilder auditMessage = new StringBuilder()
+                        .append("Loan Application of ID: ").append(savedApp.getId());
+
+                // Safe check for loan
+                if (savedApp.getLoan() != null) {
+                    auditMessage.append(" Loan No: ").append(savedApp.getLoan().getLoanAccountNumber());
+                } else {
+                    auditMessage.append(" (Loan not yet associated)");
+                }
+                auditMessage.append(" has been APPROVED by: ").append(createdByName).append("-").append(createdById);
+
                 auditService.masterAuditLogs(
                         savedApp.getBorrower().getId(),
                         GeneralConfig.BorrowerActivityType.LOAN_APPLICATION_APPROVAL_ACTIVITY,
                         "APPLICATION_APPROVAL",
-                        "Loan Application of ID:"+savedApp.getId()+" Loan No:"+savedApp.getLoan().getLoanAccountNumber()+  " has been APPROVED by:"+createdByName+"-"+createdById
+                        auditMessage.toString()
                 );
             }
+
             //End Audit Section
 
             log.debug("✓ Audit log created");

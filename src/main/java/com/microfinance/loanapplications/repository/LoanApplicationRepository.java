@@ -255,8 +255,8 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     AND (:minAmount IS NULL OR la.appliedAmount >= :minAmount)
     AND (:maxAmount IS NULL OR la.appliedAmount <= :maxAmount)
     AND (:productType IS NULL OR lp.productType.name = :productType)
-    AND (:startDate IS NULL OR la.submittedDate >= :startDate)
-    AND (:endDate IS NULL OR la.submittedDate <= :endDate)
+    AND (CAST(:startDate AS timestamp) IS NULL OR la.submittedDate >= :startDate)
+    AND (CAST(:endDate AS timestamp) IS NULL OR la.submittedDate <= :endDate)
     AND la.submittedDate IS NOT NULL
     ORDER BY 
         CASE 

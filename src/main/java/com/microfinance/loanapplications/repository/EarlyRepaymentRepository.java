@@ -23,6 +23,8 @@ public interface EarlyRepaymentRepository extends JpaRepository<EarlyRepaymentRe
 
     Page<EarlyRepaymentRequest> findByStatus(GeneralConfig.EarlyRepaymentStatus status, Pageable pageable);
 
+
+    /*
     @Query("SELECT e FROM EarlyRepaymentRequest e WHERE " +
            "(:status IS NULL OR e.status = :status) AND " +
            "(:branchId IS NULL OR e.loan.branch.id = :branchId) AND " +
@@ -39,6 +41,60 @@ public interface EarlyRepaymentRepository extends JpaRepository<EarlyRepaymentRe
             @Param("loanProductId") Long loanProductId,
             @Param("search") String search,
             Pageable pageable);
+
+*/
+        @Query(value = """
+        SELECT DISTINCT e.* 
+        FROM early_repayment_requests e
+        INNER JOIN loans l ON l.id = e.loan_id
+        INNER JOIN borrowers b ON b.id = e.borrower_id
+        WHERE (CAST(:status AS text) IS NULL OR CAST(:status AS text) = 'ALL' OR e.status = CAST(:status AS text))
+          AND (CAST(:branchId AS text) IS NULL OR CAST(:branchId AS text) = 'ALL' OR l.branch_id = CAST(:branchId AS bigint))
+          AND (CAST(:loanProductId AS text) IS NULL OR CAST(:loanProductId AS text) = 'ALL' OR l.loan_product_id = CAST(:loanProductId AS bigint))
+          AND (CAST(:search AS text) IS NULL OR CAST(:search AS text) = 'ALL' OR 
+               LOWER(e.request_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(l.loan_account_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.first_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.last_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.borrower_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+        ORDER BY e.requested_date DESC
+        """,
+                nativeQuery = true,
+                countQuery = """
+        SELECT COUNT(DISTINCT e.id)
+        FROM early_repayment_requests e
+        INNER JOIN loans l ON l.id = e.loan_id
+        INNER JOIN borrowers b ON b.id = e.borrower_id
+        WHERE (CAST(:status AS text) IS NULL OR CAST(:status AS text) = 'ALL' OR e.status = CAST(:status AS text))
+          AND (CAST(:branchId AS text) IS NULL OR CAST(:branchId AS text) = 'ALL' OR l.branch_id = CAST(:branchId AS bigint))
+          AND (CAST(:loanProductId AS text) IS NULL OR CAST(:loanProductId AS text) = 'ALL' OR l.loan_product_id = CAST(:loanProductId AS bigint))
+          AND (CAST(:search AS text) IS NULL OR CAST(:search AS text) = 'ALL' OR 
+               LOWER(e.request_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(l.loan_account_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.first_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.last_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+               LOWER(b.borrower_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+        """)
+        Page<EarlyRepaymentRequest> findEarlyRepaymentRequestsNative(
+                @Param("status") String status,
+                @Param("branchId") Long branchId,
+                @Param("loanProductId") Long loanProductId,
+                @Param("search") String search,
+                Pageable pageable);
+
+        // Public method that accepts enum - this is what your service calls
+        default Page<EarlyRepaymentRequest> findEarlyRepaymentRequests(
+                GeneralConfig.EarlyRepaymentStatus status,
+                Long branchId,
+                Long loanProductId,
+                String search,
+                Pageable pageable) {
+
+            // Convert enum to string for the native query
+            String statusString = status != null ? status.name() : null;
+            return findEarlyRepaymentRequestsNative(statusString, branchId, loanProductId, search, pageable);
+        }
+
 
     @Query("SELECT COALESCE(SUM(e.earlyRepaymentAmount), 0) FROM EarlyRepaymentRequest e WHERE e.status = 'PAID'")
     BigDecimal getTotalEarlyRepayments();

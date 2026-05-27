@@ -273,11 +273,14 @@ public class ChartOfAccountsService {
         account.setDescription(dto.getDescription());
         account.setIsActive(account.getIsActive());
         account.setBankAccountDetails(dto.getBankAccountDetails());
+        account.setOpeningBalance(dto.getOpeningBalance());
         
         account = accountRepository.save(account);
 
         if (account != null && account.getId() != null) {
+            log.info(">>>>>> Opening Balance of : {}", account.getOpeningBalance());
             log.info("Account created successfully with ID: {}", account.getId());
+
             auditService.logChartOfAccountAction(
                     account.getId(),
                     "ACCOUNT_UPDATE",

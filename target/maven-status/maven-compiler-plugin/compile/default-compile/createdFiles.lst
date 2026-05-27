@@ -19,6 +19,7 @@ com\microfinance\reports\dto\ReportStatisticsDto.class
 com\microfinance\loanapplications\dto\approval\ApprovalWorkflowStepDto.class
 com\microfinance\financials\generalledger\entity\JournalEntry$JournalEntryBuilder.class
 com\microfinance\financials\budget\dto\ForecastDataPoint$ForecastDataPointBuilder.class
+com\microfinance\reports\service\ClientReportsServiceImpl.class
 com\microfinance\financials\taxmanagement\dto\TaxConfigDTO$TaxConfigDTOBuilder.class
 com\microfinance\financials\provisions\service\ProvisionService.class
 com\microfinance\loanapplications\dto\repayment\CalendarEventDto.class
@@ -27,6 +28,7 @@ com\microfinance\loanapplications\dto\repayment\WaiveRepaymentDto.class
 com\microfinance\financials\financialreports\dto\ReportHeader$ReportHeaderBuilder.class
 com\microfinance\loanapplications\dto\earlyrepayment\EligibleLoanDto$EligibleLoanDtoBuilder.class
 com\microfinance\loanapplications\dto\disbursement\RescheduleDetailDto.class
+com\microfinance\loanapplications\dto\report\KycStatusReport.class
 com\microfinance\loanapplications\service\LoanApprovalService.class
 com\microfinance\financials\provisions\entity\WriteOffRequest$WriteOffRequestBuilder.class
 com\microfinance\dashboard\dto\PendingTaskDto$PendingTaskDtoBuilder.class
@@ -35,6 +37,7 @@ com\microfinance\loanapplications\dto\DashboardStatsDto.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$MonthlyStats.class
 com\microfinance\loanapplications\entity\ApprovalDelegation.class
 com\microfinance\loanapplications\dto\collection\BulkAssignOfficerRequestDto$BulkAssignOfficerRequestDtoBuilder.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$HighRiskClient.class
 com\microfinance\financials\generalledger\entity\JournalEntryLine.class
 com\microfinance\loanapplications\dto\approval\DelegateApprovalDto.class
 com\microfinance\loanapplications\service\LegalNoticeService.class
@@ -76,6 +79,7 @@ com\microfinance\loanapplications\dto\rescheduling\RescheduleStatisticsDto.class
 com\microfinance\financials\reconciliation\dto\ReconciliationSummaryDTO.class
 com\microfinance\loanapplications\controller\RecoveryWorkflowController.class
 com\microfinance\base\utils\SecurityUtils.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport.class
 com\microfinance\loanapplications\dto\SubmitApplicationDto.class
 com\microfinance\loanapplications\entity\ApprovalDelegation$ApprovalDelegationBuilder.class
 com\microfinance\loanapplications\dto\collection\StageBreakdownDto.class
@@ -93,6 +97,7 @@ com\microfinance\system\service\SystemServiceImpl.class
 com\microfinance\borrower\dto\BorrowerActiveLoanDto$BorrowerActiveLoanDtoBuilder.class
 com\microfinance\borrower\dto\EnhancedKycSummaryDto.class
 com\microfinance\loanapplications\entity\Loan.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$OccupationBreakdown.class
 com\microfinance\financials\generalledger\dto\JournalEntryDto.class
 com\microfinance\financials\provisions\entity\LoanRecovery.class
 com\microfinance\loanapplications\dto\rescheduling\RequestMoreInfoDto$RequestMoreInfoDtoBuilder.class
@@ -106,6 +111,7 @@ com\microfinance\financials\financialreports\dto\ReportHeader.class
 com\microfinance\loanapplications\mapper\LoanApplicationMapper.class
 com\microfinance\financials\financialreports\dto\CashFlowSummary$CashFlowSummaryBuilder.class
 com\microfinance\financials\generalledger\entity\JournalEntry.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$GenderDistribution$GenderDistributionBuilder.class
 com\microfinance\borrower\dto\GroupLoanEligibilityDto$MemberEligibilityDetail.class
 com\microfinance\loanapplications\dto\collection\DailyCollectionTrendDto.class
 com\microfinance\borrower\repository\GuarantorRepository.class
@@ -118,6 +124,7 @@ com\microfinance\loanapplications\entity\FieldVisit.class
 com\microfinance\borrower\dto\BorrowerActivityDto$TimelineGroup.class
 com\microfinance\financials\taxmanagement\dto\TaxCalculationResultDTO.class
 com\microfinance\financials\provisions\repository\WriteOffRequestRepository.class
+com\microfinance\reports\service\ClientReportsService.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$StageCounts$StageCountsBuilder.class
 com\microfinance\loanapplications\dto\collection\TaskAssignmentResultDto$TaskAssignmentResultDtoBuilder.class
 com\microfinance\loanapplications\dto\rescheduling\EligibleLoanDto$EligibleLoanDtoBuilder.class
@@ -133,6 +140,7 @@ com\microfinance\borrower\entity\KycWorkflow.class
 com\microfinance\financials\budget\entity\Budget.class
 com\microfinance\loanapplications\dto\collection\ScheduleReminderRequestDto.class
 com\microfinance\loanapplications\dto\earlyrepayment\EligibilityResponseDto$EligibilityResponseDtoBuilder.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$RiskDistribution.class
 com\microfinance\borrower\dto\BorrowerActivityDto.class
 com\microfinance\financials\generalledger\repository\JournalEntryRepository.class
 com\microfinance\loanapplications\dto\approval\ApprovalWorkflowDto.class
@@ -187,6 +195,7 @@ com\microfinance\financials\budget\dto\BudgetActualDTO$BudgetActualDTOBuilder.cl
 com\microfinance\financials\financialreports\dto\TrialBalanceRequest.class
 com\microfinance\loanapplications\dto\approval\BulkApprovalRequestDto$BulkApprovalRequestDtoBuilder.class
 com\microfinance\financials\generalledger\service\GeneralLedgerService.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$RiskFactor.class
 com\microfinance\financials\reconciliation\entity\BankStatement.class
 com\microfinance\common\dto\DocumentUseCaseDto.class
 com\microfinance\financials\financialreports\dto\BalanceSheetDTO$BalanceSheetDTOBuilder.class
@@ -195,6 +204,7 @@ com\microfinance\loanapplications\dto\approval\ProductApprovalStats$ProductAppro
 com\microfinance\loanapplications\dto\DashboardStatsDto$RecentActivity$RecentActivityBuilder.class
 com\microfinance\loanapplications\dto\rescheduling\RescheduleStatisticsDto$RescheduleStatisticsDtoBuilder.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$ApplicationStatsDtoBuilder.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport$GroupPerformanceReportBuilder.class
 com\microfinance\base\entity\User$UserRole.class
 com\microfinance\financials\budget\dto\ForecastResultDTO$ForecastResultDTOBuilder.class
 com\microfinance\financials\provisions\repository\ProvisionCalculationRepository.class
@@ -224,6 +234,7 @@ com\microfinance\borrower\service\BorrowerServiceImpl$DocumentStats.class
 com\microfinance\loanapplications\dto\collection\CollectionReportDto.class
 com\microfinance\financials\budget\dto\ForecastResultDTO.class
 com\microfinance\loanapplications\dto\disbursement\PortfolioSummaryDto.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$GenderDistribution.class
 com\microfinance\loanapplications\entity\LoanRepayment.class
 com\microfinance\base\entity\User.class
 com\microfinance\loanapplications\dto\LoanApplicationDto.class
@@ -231,6 +242,7 @@ com\microfinance\loanapplications\dto\ApplicationStatsDto$PerformanceMetrics.cla
 com\microfinance\loanapplications\dto\collection\ReminderStatsDto.class
 com\microfinance\financials\generalledger\entity\GeneralLedger.class
 com\microfinance\loanapplications\dto\collection\ActivityDto.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$LocationBreakdown$LocationBreakdownBuilder.class
 com\microfinance\financials\chartofaccounts\controller\ChartOfAccountsController.class
 com\microfinance\loanapplications\dto\approval\ApprovalDelegationDto$ApprovalDelegationDtoBuilder.class
 com\microfinance\loanapplications\entity\ApprovalReminder.class
@@ -244,6 +256,7 @@ com\microfinance\loanapplications\service\LoanRescheduleService.class
 com\microfinance\dashboard\dto\SystemAlertDto.class
 com\microfinance\loanapplications\dto\approval\DelegateApprovalDto$DelegateApprovalDtoBuilder.class
 com\microfinance\reports\service\ReportServiceImpl.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$PendingDocumentByType.class
 com\microfinance\loanapplications\dto\approval\SLAStatusDto.class
 com\microfinance\base\entity\MfaBackupCode.class
 com\microfinance\loanapplications\entity\ApprovalComment.class
@@ -273,6 +286,7 @@ com\microfinance\borrower\service\BorrowerActivityService.class
 com\microfinance\common\config\GeneralConfig$CasePriority.class
 com\microfinance\loanapplications\service\ReceiptService.class
 com\microfinance\base\repository\UserRepository.class
+com\microfinance\loanapplications\dto\report\ActivityReport.class
 com\microfinance\loanapplications\entity\ApprovalReminder$ApprovalReminderBuilder.class
 com\microfinance\loanapplications\entity\Loan$LoanBuilder.class
 com\microfinance\loanapplications\dto\approval\ApprovalStatsDto.class
@@ -286,6 +300,7 @@ com\microfinance\system\mapper\ActivityLogServiceMapper.class
 com\microfinance\financials\financialreports\dto\GeneralLedgerRequest$GeneralLedgerRequestBuilder.class
 com\microfinance\loanapplications\dto\collection\StageDateDto$StageDateDtoBuilder.class
 com\microfinance\loanapplications\dto\approval\ApprovalReminderDto$ApprovalReminderDtoBuilder.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$KycTrend$KycTrendBuilder.class
 com\microfinance\loanapplications\entity\ApplicationApproval$ApplicationApprovalBuilder.class
 com\microfinance\common\dto\DocumentTypeDto.class
 com\microfinance\financials\budget\dto\BudgetActualDTO.class
@@ -337,6 +352,7 @@ com\microfinance\borrower\repository\BorrowerActivityRepository.class
 com\microfinance\loanapplications\dto\collection\DailyCollectionTrendDto$DailyCollectionTrendDtoBuilder.class
 com\microfinance\financials\generalledger\entity\FinancialPeriod$FinancialPeriodBuilder.class
 com\microfinance\loanapplications\dto\repayment\DailyCollectionDto.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport$LoanProductDistribution.class
 com\microfinance\base\config\FileStorageProperties.class
 com\microfinance\borrower\entity\DocumentVerification.class
 com\microfinance\financials\financialreports\dto\IncomeStatementDTO.class
@@ -461,12 +477,15 @@ com\microfinance\financials\reconciliation\repository\ReconciliationRepository.c
 com\microfinance\base\service\JwtService.class
 com\microfinance\loanapplications\controller\ReceiptController.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$RiskStats$CreditScoreStats$CreditScoreStatsBuilder.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$KycStatusCount$KycStatusCountBuilder.class
 com\microfinance\borrower\enums\KycWorkflowState.class
 com\microfinance\loanapplications\repository\LoanRepository.class
 com\microfinance\loanproducts\controller\LoanProductController.class
 com\microfinance\dashboard\dto\DashboardSummaryDTO$DashboardSummaryDTOBuilder.class
 com\microfinance\loanapplications\dto\collection\AssignmentResultDto$AssignmentResultDtoBuilder.class
 com\microfinance\system\controller\ActivityLogController.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$ClientDemographicsReportBuilder.class
+com\microfinance\reports\controller\ClientReportsController.class
 com\microfinance\financials\budget\dto\BudgetVsActualReportDTO.class
 com\microfinance\loanapplications\dto\collection\BulkReminderResultDto$BulkReminderResultDtoBuilder.class
 com\microfinance\financials\financialreports\dto\FinancialSummary$FinancialSummaryBuilder.class
@@ -477,11 +496,14 @@ com\microfinance\loanapplications\dto\collection\PenaltyResultDto.class
 com\microfinance\borrower\entity\BorrowerGroup.class
 com\microfinance\common\config\GeneralConfig$ApprovalDecision.class
 com\microfinance\loanapplications\dto\disbursement\LoanRepaymentDto.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport$GroupLoanPerformance.class
 com\microfinance\borrower\dto\ActivitySearchCriteria.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$KycTrend.class
 com\microfinance\loanapplications\dto\collection\CollectionPerformanceDto.class
 com\microfinance\loanapplications\entity\LoanRepaymentStatus.class
 com\microfinance\audit\dto\AuditLogFilterDto.class
 com\microfinance\loanapplications\dto\repayment\InstallmentDto.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$KycStatusCount.class
 com\microfinance\financials\financialreports\dto\BalanceSheetDTO.class
 com\microfinance\loanapplications\dto\collection\ApplyPenaltyDto.class
 com\microfinance\loanapplications\repository\LoanDocumentRepository.class
@@ -496,6 +518,7 @@ com\microfinance\borrower\repository\DocumentVerificationRepository.class
 com\microfinance\loanapplications\dto\approval\ApprovalWorkflowDto$ApprovalWorkflowDtoBuilder.class
 com\microfinance\loanapplications\dto\LoanSummaryDto.class
 com\microfinance\financials\taxmanagement\dto\TaxReportDTO$TaxReportDTOBuilder.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$MaritalStatusDistribution$MaritalStatusDistributionBuilder.class
 com\microfinance\system\entity\SystemSettings.class
 com\microfinance\financials\financialreports\dto\FinancialSummary.class
 com\microfinance\loanapplications\dto\DocumentComplianceSummary$RequiredDocumentDetail$RequiredDocumentDetailBuilder.class
@@ -526,6 +549,7 @@ com\microfinance\loanapplications\dto\ApplicationStatsDto$StageCounts.class
 com\microfinance\loanapplications\dto\approval\ApprovalConditionDto$ApprovalConditionDtoBuilder.class
 com\microfinance\loanapplications\entity\CaseNote.class
 com\microfinance\loanapplications\dto\collection\ScheduleVisitDto.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$AgeGroups$AgeGroupsBuilder.class
 com\microfinance\base\utils\GeneralConfig$ProductStatus.class
 com\microfinance\financials\reconciliation\dto\BankAccountDTO$BankAccountDTOBuilder.class
 com\microfinance\loanapplications\dto\earlyrepayment\EarlyRepaymentFeeStructureDto.class
@@ -537,8 +561,10 @@ com\microfinance\common\config\DocumentConfig$DocumentUtils.class
 com\microfinance\loanapplications\dto\approval\ApprovalCommentDto$ApprovalCommentDtoBuilder.class
 com\microfinance\loanapplications\dto\repayment\DailyCollectionDto$DailyCollectionDtoBuilder.class
 com\microfinance\loanapplications\service\LoanApplicationService.class
+com\microfinance\loanapplications\dto\report\ReportHistoryDto.class
 com\microfinance\loanapplications\repository\CollectionActionRepository.class
 com\microfinance\base\controller\UserSessionController.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$HighRiskClient$HighRiskClientBuilder.class
 com\microfinance\borrower\dto\BorrowerActivitySummaryDto.class
 com\microfinance\reports\dto\ReportStatisticsDto$ReportStatisticsDtoBuilder.class
 com\microfinance\base\entity\RolePermission.class
@@ -546,6 +572,7 @@ com\microfinance\loanapplications\dto\collection\UpdateNoticeStatusDto.class
 com\microfinance\loanapplications\service\RecoveryWorkflowServiceImpl.class
 com\microfinance\financials\provisions\dto\LoanRecoveryDTO.class
 com\microfinance\base\service\UserService.class
+com\microfinance\loanapplications\dto\report\ActivityReport$ActivityByType$ActivityByTypeBuilder.class
 com\microfinance\system\repository\BranchRepository.class
 com\microfinance\loanapplications\dto\approval\PendingApprovalDto$PendingApprovalDtoBuilder.class
 com\microfinance\loanapplications\dto\CollectionItemDto.class
@@ -559,12 +586,15 @@ com\microfinance\loanapplications\repository\ReschedulingHistoryRepository.class
 com\microfinance\loanapplications\dto\repayment\BulkRepaymentResultDto.class
 com\microfinance\borrower\dto\GroupMeetingDto$Decision.class
 com\microfinance\exception\GlobalExceptionHandler.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$AgeGroups.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport$GroupsByStatus$GroupsByStatusBuilder.class
 com\microfinance\loanapplications\controller\FieldVisitController.class
 com\microfinance\loanapplications\dto\OverdueLoanDto$OverdueLoanDtoBuilder.class
 com\microfinance\loanapplications\service\LoanDisbursementService.class
 com\microfinance\common\config\GeneralConfig.class
 com\microfinance\loanapplications\dto\repayment\InstallmentRemainingDto.class
 com\microfinance\borrower\entity\BorrowerProductPreference.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport.class
 com\microfinance\loanapplications\dto\LoanRestructureRequestDto.class
 com\microfinance\financials\financialreports\dto\CashFlowItem.class
 com\microfinance\loanapplications\dto\repayment\BulkRepaymentErrorDto$BulkRepaymentErrorDtoBuilder.class
@@ -614,6 +644,7 @@ com\microfinance\loanapplications\dto\approval\ApprovalDecisionDto.class
 com\microfinance\financials\financialreports\dto\TrialBalanceDTO$TrialBalanceDTOBuilder.class
 com\microfinance\financials\provisions\dto\WriteOffRequestDTO$WriteOffRequestDTOBuilder.class
 com\microfinance\loanapplications\dto\approval\ApprovalDelegationDto.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$KycStatusReportBuilder.class
 com\microfinance\base\controller\AuthController.class
 com\microfinance\loanapplications\mapper\ApprovalMapperImpl.class
 com\microfinance\exception\ValidationException$ErrorCodes.class
@@ -624,6 +655,7 @@ com\microfinance\loanapplications\dto\approval\ApprovalCommentDto.class
 com\microfinance\loanapplications\dto\approval\ApprovalDecisionDto$ApprovalDecisionDtoBuilder.class
 com\microfinance\base\service\RolePermissionService.class
 com\microfinance\loanapplications\service\LoanRepaymentServiceImpl.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport$PortfolioSummaryReportBuilder.class
 com\microfinance\loanapplications\dto\approval\EscalationResult$EscalationTarget$EscalationTargetBuilder.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto.class
 com\microfinance\loanapplications\dto\earlyrepayment\ApproveEarlyRepaymentDto.class
@@ -640,11 +672,13 @@ com\microfinance\system\controller\SystemController.class
 com\microfinance\financials\generalledger\dto\TrialBalanceDto$TrialBalanceDtoBuilder.class
 com\microfinance\financials\reconciliation\dto\BankStatementDTO$BankStatementDTOBuilder.class
 com\microfinance\financials\budget\dto\ReportHeader$ReportHeaderBuilder.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport$LoanProductDistribution$LoanProductDistributionBuilder.class
 com\microfinance\loanapplications\dto\rescheduling\ApproveRejectRequestDto$ApproveRejectRequestDtoBuilder.class
 com\microfinance\financials\taxmanagement\entity\TaxConfig$TaxConfigBuilder.class
 com\microfinance\base\controller\HealthController.class
 com\microfinance\exception\TooManyRequestsException.class
 com\microfinance\loanapplications\service\LoanRescheduleServiceImpl$1.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport$ParDays$ParDaysBuilder.class
 com\microfinance\loanapplications\dto\disbursement\BulkDisbursementResponseDto.class
 com\microfinance\borrower\entity\KycWorkflowHistory.class
 com\microfinance\borrower\repository\KycWorkflowRepository.class
@@ -669,6 +703,7 @@ com\microfinance\loanapplications\dto\approval\ApprovalStatsDto$ApprovalStatsDto
 com\microfinance\reports\dto\ReportFilterDto$ReportFilterDtoBuilder.class
 com\microfinance\loanproducts\deserializer\InterestMethodDeserializer.class
 com\microfinance\base\config\SecurityConfig.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$OccupationBreakdown$OccupationBreakdownBuilder.class
 com\microfinance\financials\financialreports\dto\ReportRequest.class
 com\microfinance\base\dto\MfaBackupCodesResponse.class
 com\microfinance\base\utils\GeneralConfig$InterestMethod.class
@@ -676,6 +711,7 @@ com\microfinance\base\utils\GeneralConfig.class
 com\microfinance\loanproducts\entity\LoanProduct.class
 com\microfinance\financials\generalledger\service\GeneralLedgerServiceImpl.class
 com\microfinance\loanapplications\dto\approval\AmountMetrics.class
+com\microfinance\loanapplications\dto\report\PortfolioSummaryReport$ParDays.class
 com\microfinance\loanapplications\dto\collection\AttachmentDto$AttachmentDtoBuilder.class
 com\microfinance\loanapplications\dto\collection\BulkReminderResultDto.class
 com\microfinance\loanapplications\dto\rescheduling\ReschedulingDocumentDto.class
@@ -776,6 +812,7 @@ com\microfinance\loanapplications\entity\ReschedulingRequest$RequestType.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$TotalCounts$TotalCountsBuilder.class
 com\microfinance\loanapplications\repository\LoanRepaymentRepository.class
 com\microfinance\loanapplications\dto\collection\StageBreakdownDto$StageBreakdownDtoBuilder.class
+com\microfinance\loanapplications\dto\report\ActivityReport$RecentActivity.class
 com\microfinance\loanapplications\service\FieldVisitService.class
 com\microfinance\borrower\service\GuarantorService.class
 com\microfinance\loanapplications\service\WorkflowStepService$1.class
@@ -812,7 +849,9 @@ com\microfinance\loanapplications\dto\application\PortfolioStats.class
 com\microfinance\loanapplications\dto\earlyrepayment\EligibilityResponseDto.class
 com\microfinance\loanapplications\dto\disbursement\BulkDisbursementRequestDto.class
 com\microfinance\loanapplications\dto\LoanRescheduleResponseDto.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$RiskDistribution$RiskDistributionBuilder.class
 com\microfinance\loanapplications\dto\collection\OfficerPerformanceDetailDto$OfficerPerformanceDetailDtoBuilder.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport.class
 com\microfinance\financials\taxmanagement\controller\TaxController.class
 com\microfinance\loanapplications\dto\DashboardStatsDto$PerformanceIndicators.class
 com\microfinance\borrower\dto\ActivityTimelineDto$TimelineGroup.class
@@ -822,7 +861,9 @@ com\microfinance\loanapplications\dto\approval\DelegateApprovalResult$DelegateAp
 com\microfinance\loanapplications\dto\ApplicationValidationResult.class
 com\microfinance\loanproducts\service\LoanProductService$1.class
 com\microfinance\common\config\GeneralConfig$InstallmentStatus.class
+com\microfinance\loanapplications\dto\report\ActivityReport$ActivityByType.class
 com\microfinance\loanapplications\dto\collection\ReminderScheduleDto.class
+com\microfinance\loanapplications\dto\report\KycStatusReport$PendingDocumentByType$PendingDocumentByTypeBuilder.class
 com\microfinance\loanapplications\dto\rescheduling\ReschedulingDocumentDto$ReschedulingDocumentDtoBuilder.class
 com\microfinance\reports\dto\DataChangeDto.class
 com\microfinance\financials\generalledger\dto\FinancialPeriodDto$FinancialPeriodDtoBuilder.class
@@ -858,6 +899,7 @@ com\microfinance\loanapplications\dto\ApplicationStatsDto$RiskStats$HighRiskAppl
 com\microfinance\loanapplications\repository\ApprovalDelegationRepository.class
 com\microfinance\loanapplications\dto\disbursement\DisbursementStatsDto.class
 com\microfinance\financials\financialreports\dto\TrialBalanceRequest$TrialBalanceRequestBuilder.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$MaritalStatusDistribution.class
 com\microfinance\loanapplications\repository\LoanAuditRepository.class
 com\microfinance\financials\chartofaccounts\entity\Account.class
 com\microfinance\borrower\dto\BorrowerActivitySummaryDto$BorrowerActivitySummaryDtoBuilder.class
@@ -890,6 +932,7 @@ com\microfinance\loanapplications\dto\collection\CollectionStatisticsDto.class
 com\microfinance\loanapplications\dto\repayment\ReceiptDto$ReceiptDtoBuilder.class
 com\microfinance\borrower\entity\KycWorkflowStepStatus.class
 com\microfinance\loanapplications\dto\collection\RiskBreakdownDto.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$RiskFactor$RiskFactorBuilder.class
 com\microfinance\common\config\GeneralConfig$PaymentMethod.class
 com\microfinance\loanapplications\dto\disbursement\BulkDisbursementRequestDto$BulkDisbursementRequestDtoBuilder.class
 com\microfinance\loanapplications\dto\ApplicationStatsDto$FinancialStats.class
@@ -901,6 +944,7 @@ com\microfinance\common\config\GeneralConfig$FollowUpAction.class
 com\microfinance\loanapplications\entity\CollectionAction$CollectionActionBuilder.class
 com\microfinance\borrower\dto\BorrowerDto.class
 com\microfinance\financials\provisions\entity\ProvisionCalculation$ProvisionCalculationBuilder.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport.class
 com\microfinance\loanapplications\mapper\LoanApplicationMapperImpl.class
 com\microfinance\loanapplications\dto\ApplicationApprovalDto.class
 com\microfinance\loanapplications\dto\disbursement\BulkDisbursementResponseDto$BulkDisbursementResponseDtoBuilder.class
@@ -913,9 +957,11 @@ com\microfinance\loanapplications\dto\repayment\RepaymentReceiptDto.class
 com\microfinance\loanapplications\dto\repayment\LoanEligibleForRepaymentDto.class
 com\microfinance\system\service\ActivityLogServiceImpl.class
 com\microfinance\loanapplications\service\DocumentComplianceService.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport$GroupsByStatus.class
 com\microfinance\loanapplications\dto\rescheduling\CreateReschedulingRequestDto$CreateReschedulingRequestDtoBuilder.class
 com\microfinance\loanapplications\entity\ReschedulingRequest$RequestStatus.class
 com\microfinance\loanapplications\dto\collection\OfficerPerformanceDto.class
+com\microfinance\loanapplications\dto\report\ActivityReport$DailyActivityTrend.class
 com\microfinance\audit\dto\AuditLogDto.class
 com\microfinance\loanapplications\dto\collection\AddCaseNoteDto.class
 com\microfinance\loanapplications\dto\collection\ReminderResultDto$ReminderResultDtoBuilder.class
@@ -934,6 +980,7 @@ com\microfinance\loanapplications\service\LoanRepaymentService.class
 com\microfinance\audit\entity\AuditLog.class
 com\microfinance\borrower\controller\BorrowerController.class
 com\microfinance\loanapplications\dto\collection\ReminderResultDto.class
+com\microfinance\loanapplications\dto\report\ActivityReport$ActivityReportBuilder.class
 com\microfinance\loanapplications\dto\approval\ApprovalAnalyticsDto$ProductApprovalStats.class
 com\microfinance\financials\generalledger\entity\JournalEntryLine$JournalEntryLineBuilder.class
 com\microfinance\loanapplications\dto\repayment\RepaymentSummaryDto$RepaymentSummaryDtoBuilder.class
@@ -942,6 +989,7 @@ com\microfinance\financials\financialreports\dto\IncomeStatementRequest.class
 com\microfinance\loanapplications\dto\repayment\RepaymentStatisticsDto$RepaymentStatisticsDtoBuilder.class
 com\microfinance\exception\ValidationException$ValidationError.class
 com\microfinance\loanapplications\dto\repayment\RepaymentScheduleDto.class
+com\microfinance\loanapplications\dto\report\ClientDemographicsReport$LocationBreakdown.class
 com\microfinance\reports\dto\UserActivityDto$UserActivityDtoBuilder.class
 com\microfinance\loanapplications\dto\collection\CaseFilterDto.class
 com\microfinance\loanapplications\mapper\EfficientLoanMapper.class
@@ -950,6 +998,7 @@ com\microfinance\financials\taxmanagement\dto\TaxCalculationRequestDTO.class
 com\microfinance\loanapplications\dto\approval\ApprovalPerformanceDto$ProductPerformance.class
 com\microfinance\loanapplications\entity\LoanApplication$LoanApplicationBuilder.class
 com\microfinance\borrower\dto\BorrowerActivityDto$ActivityType.class
+com\microfinance\loanapplications\dto\report\RiskAssessmentReport$RiskAssessmentReportBuilder.class
 com\microfinance\borrower\dto\BorrowerActiveLoanDto.class
 com\microfinance\borrower\dto\GroupMeetingDto$CollectionDetail.class
 com\microfinance\financials\chartofaccounts\dto\AccountCategoryDto$AccountCategoryDtoBuilder.class
@@ -973,6 +1022,7 @@ com\microfinance\financials\financialreports\dto\LedgerEntry.class
 com\microfinance\loanapplications\service\LoanDisbursementServiceImpl.class
 com\microfinance\common\config\GeneralConfig$ConditionStatus.class
 com\microfinance\loanapplications\dto\approval\EscalationDto.class
+com\microfinance\loanapplications\dto\report\ActivityReport$DailyActivityTrend$DailyActivityTrendBuilder.class
 com\microfinance\financials\financialreports\dto\InvestingCashFlow$InvestingCashFlowBuilder.class
 com\microfinance\financials\budget\dto\BudgetDTO$BudgetDTOBuilder.class
 com\microfinance\loanapplications\dto\collection\AssignOfficerRequestDto$AssignOfficerRequestDtoBuilder.class
@@ -1012,6 +1062,7 @@ com\microfinance\borrower\dto\DocumentVerificationActionRequest.class
 com\microfinance\base\dto\UserUpdateRequest.class
 com\microfinance\financials\generalledger\dto\JournalEntryLineDto.class
 com\microfinance\borrower\dto\BorrowerKycSummaryDto$BorrowerKycSummaryDtoBuilder.class
+com\microfinance\loanapplications\dto\report\GroupPerformanceReport$GroupLoanPerformance$GroupLoanPerformanceBuilder.class
 com\microfinance\base\service\PermissionCheckService.class
 com\microfinance\loanapplications\mapper\ApprovalMapper.class
 com\microfinance\reports\dto\SecurityEventDto.class
@@ -1075,6 +1126,7 @@ com\microfinance\loanapplications\dto\earlyrepayment\EarlyRepaymentRequestDto$Ea
 com\microfinance\financials\reconciliation\dto\MatchItemsRequestDTO.class
 com\microfinance\loanapplications\dto\collection\ActivityDto$ActivityDtoBuilder.class
 com\microfinance\loanapplications\dto\collection\DailyCollectionDto.class
+com\microfinance\loanapplications\dto\report\ReportHistoryDto$ReportHistoryDtoBuilder.class
 com\microfinance\loanapplications\entity\ReschedulingDocument$ReschedulingDocumentBuilder.class
 com\microfinance\loanapplications\controller\LoanApplicationController.class
 com\microfinance\system\entity\HolidayCalendar.class
@@ -1091,6 +1143,7 @@ com\microfinance\loanapplications\dto\collection\CaseNoteDto.class
 com\microfinance\financials\financialperiod\dto\ClosePeriodDto$ClosePeriodDtoBuilder.class
 com\microfinance\loanapplications\dto\collection\ScheduleReminderRequestDto$ScheduleReminderRequestDtoBuilder.class
 com\microfinance\loanapplications\entity\ApprovalDelegation$DelegationStatus.class
+com\microfinance\loanapplications\dto\report\ActivityReport$RecentActivity$RecentActivityBuilder.class
 com\microfinance\loanapplications\dto\repayment\CreateScheduleRequestDto$CreateScheduleRequestDtoBuilder.class
 com\microfinance\common\config\GeneralConfig$GuarantorStatus.class
 com\microfinance\base\service\CustomUserDetailsService.class

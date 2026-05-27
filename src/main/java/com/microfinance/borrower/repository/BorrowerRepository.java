@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,13 @@ public interface BorrowerRepository extends JpaRepository<Borrower, Long> {
     boolean existsByIdentificationNumber(String identificationNumber);
     
     Page<Borrower> findByBranchId(Long branchId, Pageable pageable);
+
+
+    List<Borrower> findByBranchId(Long branchId);
+
+    @Query("SELECT b FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId)")
+    List<Borrower> findAllWithBranchFilter(@Param("branchId") Long branchId);
+
     
     Page<Borrower> findByGroupId(Long groupId, Pageable pageable);
     
@@ -343,6 +351,28 @@ public interface BorrowerRepository extends JpaRepository<Borrower, Long> {
      */
     @Query("SELECT b.status, COUNT(b) FROM Borrower b GROUP BY b.status")
     List<Object[]> getBorrowerStatusDistribution();
+
+    // New methods for reports
+    @Query("SELECT COUNT(b) FROM Borrower b WHERE b.branch.id = :branchId")
+    Long countByBranchId(@Param("branchId") Long branchId);
+
+    @Query("SELECT b.gender, COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) GROUP BY b.gender")
+    List<Object[]> countByGender(@Param("branchId") Long branchId);
+
+    @Query("SELECT b.maritalStatus, COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) GROUP BY b.maritalStatus")
+    List<Object[]> countByMaritalStatus(@Param("branchId") Long branchId);
+
+    @Query("SELECT b.occupation, COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) AND b.occupation IS NOT NULL GROUP BY b.occupation")
+    List<Object[]> countByOccupation(@Param("branchId") Long branchId);
+
+    @Query("SELECT b.branch.name, COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) GROUP BY b.branch.name")
+    List<Object[]> countByBranch(@Param("branchId") Long branchId);
+
+    @Query("SELECT b.kycStatus, COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) GROUP BY b.kycStatus")
+    List<Object[]> countByKycStatus(@Param("branchId") Long branchId);
+
+    @Query("SELECT FUNCTION('DATE', b.createdAt), COUNT(b) FROM Borrower b WHERE (:branchId IS NULL OR b.branch.id = :branchId) AND b.createdAt >= :startDate GROUP BY FUNCTION('DATE', b.createdAt)")
+    List<Object[]> countByCreationDate(@Param("branchId") Long branchId, @Param("startDate") LocalDateTime startDate);
 
 
 

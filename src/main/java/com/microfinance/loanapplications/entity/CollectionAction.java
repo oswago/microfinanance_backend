@@ -60,7 +60,7 @@ public class CollectionAction extends BaseEntity {
     @Column(name = "outcome", length = 100)
     private GeneralConfig.Outcome outcome;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(name = "notes.txt", columnDefinition = "TEXT")
     private String notes;
 
     @Column(name = "follow_up_date")

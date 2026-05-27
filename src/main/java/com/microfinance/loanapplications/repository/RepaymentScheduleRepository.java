@@ -6,6 +6,7 @@ import com.microfinance.loanapplications.entity.RepaymentSchedule;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -382,10 +383,8 @@ public interface RepaymentScheduleRepository extends JpaRepository<RepaymentSche
             @Param("search") String search,
             Pageable pageable);
 
-
-
-
-    // In your LoanRepository
+    /*
+    @EntityGraph(attributePaths = {"borrower", "branch", "loanProduct", "repaymentSchedules"})
     @Query("SELECT DISTINCT l FROM Loan l " +
             "LEFT JOIN FETCH l.borrower b " +
             "LEFT JOIN FETCH l.branch br " +
@@ -405,6 +404,75 @@ public interface RepaymentScheduleRepository extends JpaRepository<RepaymentSche
             @Param("loanProductId") Long loanProductId,
             @Param("search") String search,
             Pageable pageable);
+
+
+*/
+
+
+    @Query("SELECT DISTINCT l FROM Loan l " +
+            "LEFT JOIN FETCH l.borrower b " +
+            "LEFT JOIN FETCH l.branch br " +
+            "LEFT JOIN FETCH l.loanProduct lp " +
+            "LEFT JOIN l.repaymentSchedules rs " +  // This is the correct JPQL syntax
+            "WHERE (:status IS NULL OR l.status = :status) " +
+            "AND (:branchId IS NULL OR l.branch.id = :branchId) " +
+            "AND (:loanProductId IS NULL OR l.loanProduct.id = :loanProductId) " +
+            "AND (:search IS NULL OR :search = '' OR " +
+            "      LOWER(l.loanAccountNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(b.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(b.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "      LOWER(b.borrowerNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Loan> findLoansWithFilters(
+            @Param("status") String status,
+            @Param("branchId") Long branchId,
+            @Param("loanProductId") Long loanProductId,
+            @Param("search") String search,
+            Pageable pageable);
+
+
+
+    @Query(value = """
+    SELECT DISTINCT l.* 
+    FROM loans l
+    LEFT JOIN borrowers b ON b.id = l.borrower_id
+    LEFT JOIN branches br ON br.id = l.branch_id
+    LEFT JOIN loan_products lp ON lp.id = l.loan_product_id
+    LEFT JOIN repayment_schedules rs ON rs.loan_id = l.id
+    WHERE (:status IS NULL OR CAST(:status AS text) IS NULL OR l.status = CAST(:status AS text))
+      AND (:branchId IS NULL OR CAST(:branchId AS bigint) IS NULL OR l.branch_id = CAST(:branchId AS bigint))
+      AND (:loanProductId IS NULL OR CAST(:loanProductId AS bigint) IS NULL OR l.loan_product_id = CAST(:loanProductId AS bigint))
+      AND (:search IS NULL OR CAST(:search AS text) IS NULL OR 
+           LOWER(l.loan_account_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.first_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.last_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.borrower_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+    ORDER BY l.id ASC
+    """,
+            nativeQuery = true,
+            countQuery = """
+    SELECT COUNT(DISTINCT l.id)
+    FROM loans l
+    LEFT JOIN borrowers b ON b.id = l.borrower_id
+    WHERE (:status IS NULL OR CAST(:status AS text) IS NULL OR l.status = CAST(:status AS text))
+      AND (:branchId IS NULL OR CAST(:branchId AS bigint) IS NULL OR l.branch_id = CAST(:branchId AS bigint))
+      AND (:loanProductId IS NULL OR CAST(:loanProductId AS bigint) IS NULL OR l.loan_product_id = CAST(:loanProductId AS bigint))
+      AND (:search IS NULL OR CAST(:search AS text) IS NULL OR 
+           LOWER(l.loan_account_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.first_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.last_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR
+           LOWER(b.borrower_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
+    """)
+    Page<Loan> findLoansWithFiltersORG(
+            @Param("status") String status,
+            @Param("branchId") Long branchId,
+            @Param("loanProductId") Long loanProductId,
+            @Param("search") String search,
+            Pageable pageable);
+
+
+
+
+
 
 
 

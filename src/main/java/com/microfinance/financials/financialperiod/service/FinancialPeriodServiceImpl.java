@@ -33,7 +33,7 @@ public class FinancialPeriodServiceImpl implements FinancialPeriodService {
     @Override
     @Transactional
     public FinancialPeriodDto createFinancialPeriod(FinancialPeriodDto dto, User currentUser) {
-        log.info("Creating financial period: {} {}", dto.getYear(), dto.getMonth());
+        log.info(">>> Creating financial period: {} {}", dto.getYear(), dto.getMonth());
         
         // Check if period already exists
         if (financialPeriodRepository.existsByYearAndMonth(dto.getYear(), dto.getMonth())) {

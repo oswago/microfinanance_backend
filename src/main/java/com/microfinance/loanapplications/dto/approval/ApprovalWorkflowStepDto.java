@@ -1,6 +1,7 @@
 package com.microfinance.loanapplications.dto.approval;
 
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,75 +9,131 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO for individual approval workflow steps
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApprovalWorkflowStepDto {
+    
+    // Basic identification
     private Integer stepNumber;
-    private String role;
+    private String stepCode;
     private String stepName;
     private String stepDescription;
+    
+    // Role information
+    private String role;
+    private String approvalRole;
     private String roleDisplay;
-    private String status; // PENDING, APPROVED, REJECTED, SKIPPED
+    
+    // Status - this is the ONLY field you should set manually
+    private String status;            // PENDING, APPROVED, REJECTED, SKIPPED, COMPLETED
     private String decision;
-    private String approverName;
-    private LocalDateTime decisionDate;
-    private String comments;
-    private Boolean isCurrentStep;
+    
+    // Completion tracking
     private Boolean isCompleted;
+    private Boolean isCurrentStep;
     private Boolean isRequired;
     private Boolean isOverdue;
-    private String approvalRole;
+    
+    // Approver information
+    private String approverName;
     private String approverUsername;
-    private String stepCode;
-    private long processedAt;
-    private long slaDeadline;
-    private boolean overdue;
-    private boolean currentStep;
-
-    public String getStatusColor() {
-        if (status == null) return "secondary";
-
-        switch (status.toUpperCase()) {
-            case "APPROVED":
-                return "success";
-            case "REJECTED":
-                return "danger";
-            case "PENDING":
-                return "warning";
-            case "SKIPPED":
-                return "info";
-            default:
-                return "secondary";
-        }
-    }
-
+    private String comments;
+    private LocalDateTime decisionDate;
+    
+    // Timing information
+    private Long processedAt;
+    private Long slaDeadline;
+    
+    // ========== COMPUTED FIELDS (DO NOT SET MANUALLY) ==========
+    
+    /**
+     * Computed from status and isCurrentStep
+     * DO NOT SET THIS DIRECTLY - it's derived
+     */
+    @JsonIgnore
     public String getStatusDisplay() {
         if (status == null) return "Not Started";
-
+        
         switch (status.toUpperCase()) {
             case "APPROVED":
                 return "Approved";
             case "REJECTED":
                 return "Rejected";
             case "PENDING":
-                return isCurrentStep != null && isCurrentStep ? "Current Step" : "Pending";
+                return (isCurrentStep != null && isCurrentStep) ? "Current Step" : "Pending";
             case "SKIPPED":
                 return "Skipped";
+            case "COMPLETED":
+                return "Completed";
+            case "IN_PROGRESS":
+                return "In Progress";
             default:
                 return status;
         }
     }
-
-    public void setStepCode(String stepCode) {
-        this.stepCode = stepCode;
+    
+    /**
+     * Computed from status and isCurrentStep
+     * DO NOT SET THIS DIRECTLY - it's derived
+     */
+    @JsonIgnore
+    public String getStatusColor() {
+        if (status == null) return "secondary";
+        
+        switch (status.toUpperCase()) {
+            case "APPROVED":
+            case "COMPLETED":
+                return "success";
+            case "REJECTED":
+                return "danger";
+            case "PENDING":
+                return (isCurrentStep != null && isCurrentStep) ? "info" : "warning";
+            case "SKIPPED":
+                return "secondary";
+            case "IN_PROGRESS":
+                return "info";
+            default:
+                return "secondary";
+        }
     }
-
-    public String getStepCode() {
-        return stepCode;
+    
+    // ========== CONVENIENCE METHODS ==========
+    
+    public boolean isCompleted() {
+        return isCompleted != null && isCompleted;
+    }
+    
+    public boolean isCurrentStep() {
+        return isCurrentStep != null && isCurrentStep;
+    }
+    
+    public boolean isOverdue() {
+        return isOverdue != null && isOverdue;
+    }
+    
+    public void setOverdue(boolean overdue) {
+        this.isOverdue = overdue;
+    }
+    
+    public void setCurrentStep(boolean currentStep) {
+        this.isCurrentStep = currentStep;
+    }
+    
+    public void setCompleted(boolean completed) {
+        this.isCompleted = completed;
+        if (completed && status == null) {
+            this.status = "COMPLETED";
+        }
+    }
+    
+    // Helper method to set status consistently
+    public void setStatusAndDerived(String status, boolean isCurrentStep) {
+        this.status = status;
+        this.isCurrentStep = isCurrentStep;
+        this.isCompleted = "APPROVED".equals(status) || "COMPLETED".equals(status);
+        // statusDisplay and statusColor are computed automatically
     }
 }

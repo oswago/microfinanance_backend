@@ -37,6 +37,7 @@ public class BorrowerActivityDto {
     private String userAgent;
     private String sessionId;
 
+
     // Copy enum from entity to avoid direct dependency
     public enum ActivityType {
         BORROWER_CREATED,

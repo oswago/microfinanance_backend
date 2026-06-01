@@ -27,4 +27,5 @@ public class RepaymentSummaryDto {
     private String receivedBy;
     private LocalDateTime createdAt;
     private String status;
+
 }

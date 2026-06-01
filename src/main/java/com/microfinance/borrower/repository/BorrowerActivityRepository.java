@@ -16,15 +16,27 @@ import java.util.List;
 @Repository
 public interface BorrowerActivityRepository extends JpaRepository<BorrowerActivity, Long> {
 
-    Page<BorrowerActivity> findByBorrowerId(Long borrowerId, Pageable pageable);
+    /*Page<BorrowerActivity> findByBorrowerId(Long borrowerId, Pageable pageable);*/
+
+    @Query("SELECT ba FROM BorrowerActivity ba LEFT JOIN FETCH ba.borrower WHERE ba.borrower.id = :borrowerId")
+    Page<BorrowerActivity> findByBorrowerId(@Param("borrowerId") Long borrowerId, Pageable pageable);
     
     List<BorrowerActivity> findByBorrowerIdOrderByActivityDateDesc(Long borrowerId);
     
     List<BorrowerActivity> findByBorrowerIdAndActivityDateAfterOrderByActivityDateDesc(
             Long borrowerId, LocalDateTime activityDate);
-    
+
+    /*
     Page<BorrowerActivity> findByBorrowerIdAndActivityType(
-            Long borrowerId, GeneralConfig. BorrowerActivityType activityType, Pageable pageable);
+            Long borrowerId, GeneralConfig.BorrowerActivityType activityType, Pageable pageable);
+*/
+    @Query("SELECT ba FROM BorrowerActivity ba LEFT JOIN FETCH ba.borrower WHERE ba.borrower.id = :borrowerId AND ba.activityType = :activityType")
+    Page<BorrowerActivity> findByBorrowerIdAndActivityType(
+            @Param("borrowerId") Long borrowerId,
+            @Param("activityType") GeneralConfig.BorrowerActivityType activityType,
+            Pageable pageable);
+
+
     
     @Query("SELECT ba FROM BorrowerActivity ba WHERE ba.borrower.id = :borrowerId AND " +
            "ba.activityDate BETWEEN :startDate AND :endDate ORDER BY ba.activityDate DESC")
@@ -55,8 +67,16 @@ public interface BorrowerActivityRepository extends JpaRepository<BorrowerActivi
     @Query("SELECT ba FROM BorrowerActivity ba WHERE ba.borrower.id = :borrowerId ORDER BY ba.activityDate DESC")
     List<BorrowerActivity> findRecentByBorrowerId(@Param("borrowerId") Long borrowerId, Pageable pageable);
 
-
+/*
     @Query("SELECT ba FROM BorrowerActivity ba WHERE ba.borrower.id = :borrowerId AND ba.activityDate BETWEEN :start AND :end")
+    Page<BorrowerActivity> findByBorrowerIdAndActivityDateBetween(
+            @Param("borrowerId") Long borrowerId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            Pageable pageable);*/
+
+
+    @Query("SELECT ba FROM BorrowerActivity ba LEFT JOIN FETCH ba.borrower WHERE ba.borrower.id = :borrowerId AND ba.activityDate BETWEEN :start AND :end")
     Page<BorrowerActivity> findByBorrowerIdAndActivityDateBetween(
             @Param("borrowerId") Long borrowerId,
             @Param("start") LocalDateTime start,

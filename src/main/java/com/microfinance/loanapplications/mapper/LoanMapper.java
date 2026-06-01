@@ -11,6 +11,7 @@ import com.microfinance.system.entity.Branch;
 import com.microfinance.base.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ public class LoanMapper {
     /**
      * Convert Loan entity to LoanDto
      */
+
     public LoanDto toDto(Loan loan) {
         if (loan == null) {
             return null;
@@ -70,12 +72,26 @@ public class LoanMapper {
             dto.setLoanProductId(loan.getLoanProduct().getId());
             dto.setLoanProductName(loan.getLoanProduct().getName());
         }
+         //safe fallback
+        if (dto.getLoanProductId() == null && loan.getLoanApplication().getLoanProduct() !=null) {
+            dto.setLoanProductId(loan.getLoanApplication().getLoanProduct().getId());
+            dto.setLoanProductName(loan.getLoanApplication().getLoanProduct().getName());
+        }
+
 
         // Branch fields - flattened
         if (loan.getBranch() != null) {
             dto.setBranchId(loan.getBranch().getId());
             dto.setBranchName(loan.getBranch().getName());
         }
+
+       //safe fallback
+        if (dto.getBranchId() == null && loan.getLoanApplication().getBranch()!= null) {
+            dto.setBranchId(loan.getLoanApplication().getBranch().getId());
+            dto.setBranchName(loan.getLoanApplication().getBranch().getName());
+        }
+
+
 
         // User fields - flattened
         if (loan.getDisbursedBy() != null) {

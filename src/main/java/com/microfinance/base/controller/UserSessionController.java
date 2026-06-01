@@ -1,5 +1,6 @@
 package com.microfinance.base.controller;
 
+import com.microfinance.base.dto.UserSessionDto;
 import com.microfinance.base.entity.User;
 import com.microfinance.base.entity.UserSession;
 import com.microfinance.base.service.UserSessionService;
@@ -19,6 +20,7 @@ public class UserSessionController {
     private final UserSessionService userSessionService;
     private final UserService userService;
 
+    /*
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or @userService.getUserById(#userId).username == authentication.name")
     public ResponseEntity<List<UserSession>> getUserSessions(@PathVariable Long userId) {
@@ -26,6 +28,15 @@ public class UserSessionController {
         List<UserSession> sessions = userSessionService.getActiveUserSessions(user);
         return ResponseEntity.ok(sessions);
     }
+*/
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or @userService.getUserById(#userId).username == authentication.name")
+    public ResponseEntity<List<UserSessionDto>> getUserSessions(@PathVariable Long userId) {
+        User user = userService.getUserById(userId);
+        List<UserSessionDto> sessions = userSessionService.getActiveUserSessions(user);
+        return ResponseEntity.ok(sessions);
+    }
+
 
     @DeleteMapping("/user/{userId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or @userService.getUserById(#userId).username == authentication.name")

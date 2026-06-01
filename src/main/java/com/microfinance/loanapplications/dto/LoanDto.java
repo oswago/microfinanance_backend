@@ -72,4 +72,7 @@ public class LoanDto {
 
     private String borrowerPhoneNumber;
 
+    private  LocalDate lastPaymentDate;
+    private BigDecimal  lastPaymentAmount;
+
 }

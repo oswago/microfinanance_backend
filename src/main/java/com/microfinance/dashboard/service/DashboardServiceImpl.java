@@ -494,7 +494,13 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Check for KYC expiring soon
         try {
-            long expiringKyc = borrowerRepository.countBorrowersWithKycExpiringInDays(30);
+            //long expiringKyc = borrowerRepository.countBorrowersWithKycExpiringInDays(30);
+
+            LocalDate today = LocalDate.now();
+            LocalDate thirtyDaysFromNow = today.plusDays(30);
+
+            long expiringKyc = borrowerRepository.countByKycExpiryDateBetween(today, thirtyDaysFromNow);
+
             if (expiringKyc > 0) {
                 alerts.add(SystemAlertDto.builder()
                         .id(alertId++)

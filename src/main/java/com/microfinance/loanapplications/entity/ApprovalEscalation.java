@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "approval_escalations", indexes = {
-    @Index(name = "idx_application_id", columnList = "application_id"),
+    @Index(name = "idx_application_id_aprvlesc", columnList = "application_id"),
     @Index(name = "idx_escalated_by", columnList = "escalated_by"),
-    @Index(name = "idx_status", columnList = "status")
+    @Index(name = "idx_status_aprvescl", columnList = "status")
 })
 @Data
 @Builder

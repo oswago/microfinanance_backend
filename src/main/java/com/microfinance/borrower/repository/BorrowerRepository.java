@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -241,6 +242,9 @@ public interface BorrowerRepository extends JpaRepository<Borrower, Long> {
             "AND b.status = 'ACTIVE'")
     Integer countBorrowersWithKycExpiringInDays(@Param("days") Integer days);
 
+
+    @Query("SELECT COUNT(b) FROM Borrower b WHERE b.kycExpiryDate BETWEEN :startDate AND :endDate AND b.status = 'ACTIVE'")
+    Integer countByKycExpiryDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     /**
      * Count borrowers with expired KYC
      *

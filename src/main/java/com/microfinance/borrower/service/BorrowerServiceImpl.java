@@ -11,6 +11,7 @@ import com.microfinance.borrower.entity.BorrowerDocument;
 import com.microfinance.borrower.entity.DocumentVerification;
 import com.microfinance.borrower.enums.KycWorkflowState;
 import com.microfinance.borrower.enums.KycWorkflowStep;
+import com.microfinance.borrower.enums.RepaymentTiming;
 import com.microfinance.borrower.repository.BorrowerActivityRepository;
 import com.microfinance.borrower.repository.BorrowerDocumentRepository;
 import com.microfinance.borrower.repository.BorrowerRepository;
@@ -122,13 +123,6 @@ public class BorrowerServiceImpl implements BorrowerService {
         return null;
     }
 
-    /*
-    @Override
-    public BorrowerPortfolioSummaryDto getPortfolioSummary(Long borrowerId) {
-        return null;
-    }
-     */
-
 
         @Override
         public BorrowerPortfolioSummaryDto getPortfolioSummary(Long borrowerId) {
@@ -212,41 +206,245 @@ public class BorrowerServiceImpl implements BorrowerService {
             return summary;
         }
 
-        private String calculateRepaymentBehavior(Long borrowerId, List<Loan> loans) {
-            if (loans.isEmpty()) {
-                return "NO_HISTORY";
+
+    private String calculateRepaymentBehavior(Long borrowerId, List<Loan> loans) {
+        if (loans == null || loans.isEmpty()) {
+            return "NO_HISTORY";
+        }
+        RepaymentBehaviorMetrics metrics = analyzeRepaymentBehavior(loans);
+        // Return detailed behavior category
+        return determineBehaviorCategory(metrics);
+    }
+
+    private RepaymentBehaviorMetrics analyzeRepaymentBehavior(List<Loan> loans) {
+        RepaymentBehaviorMetrics metrics = new RepaymentBehaviorMetrics();
+
+        int totalLoans = loans.size();
+        int completedLoans = 0;
+        int activeLoans = 0;
+        int defaultedLoans = 0;
+
+        int onTimeCompletions = 0;
+        int lateCompletions = 0;
+        int earlyCompletions = 0;
+
+        double totalLateDays = 0;
+        int totalLatePayments = 0;
+        int totalOnTimePayments = 0;
+        int totalEarlyPayments = 0;
+
+        for (Loan loan : loans) {
+            // Track loan status
+            if (loan.getStatus() == GeneralConfig.LoanStatus.PAID ||
+                    loan.getStatus() == GeneralConfig.LoanStatus.COMPLETED) {
+                completedLoans++;
+
+                // Analyze repayment timing for completed loans
+                RepaymentTiming timing = analyzeLoanRepaymentTiming(loan);
+                if (timing == RepaymentTiming.ON_TIME) {
+                    onTimeCompletions++;
+                } else if (timing == RepaymentTiming.LATE) {
+                    lateCompletions++;
+                    totalLateDays += calculateTotalLateDays(loan);
+                } else if (timing == RepaymentTiming.EARLY) {
+                    earlyCompletions++;
+                }
+            } else if (loan.getStatus() == GeneralConfig.LoanStatus.ACTIVE) {
+                activeLoans++;
+            } else if (loan.getStatus() == GeneralConfig.LoanStatus.DEFAULTED ||
+                    loan.getStatus() == GeneralConfig.LoanStatus.WRITTEN_OFF) {
+                defaultedLoans++;
             }
 
-            long totalLoans = loans.size();
-            long onTimeLoans = 0;
+            // Analyze payment behavior
+            PaymentBehavior paymentBehavior = analyzePaymentBehavior(loan);
+            totalLatePayments += paymentBehavior.latePayments;
+            totalOnTimePayments += paymentBehavior.onTimePayments;
+            totalEarlyPayments += paymentBehavior.earlyPayments;
+        }
 
-            for (Loan loan : loans) {
-                if (isLoanRepaidOnTime(loan)) {
-                    onTimeLoans++;
+        // Calculate metrics
+        metrics.setTotalLoans(totalLoans);
+        metrics.setCompletedLoans(completedLoans);
+        metrics.setActiveLoans(activeLoans);
+        metrics.setDefaultedLoans(defaultedLoans);
+        metrics.setCompletionRate(totalLoans > 0 ? (completedLoans * 100.0 / totalLoans) : 0);
+        metrics.setOnTimeRate(completedLoans > 0 ? (onTimeCompletions * 100.0 / completedLoans) : 0);
+        metrics.setEarlyRate(completedLoans > 0 ? (earlyCompletions * 100.0 / completedLoans) : 0);
+        metrics.setLateRate(completedLoans > 0 ? (lateCompletions * 100.0 / completedLoans) : 0);
+        metrics.setDefaultRate(totalLoans > 0 ? (defaultedLoans * 100.0 / totalLoans) : 0);
+
+        metrics.setAvgLateDays(lateCompletions > 0 ? totalLateDays / lateCompletions : 0);
+        metrics.setPaymentReliabilityScore(calculatePaymentReliabilityScore(metrics, totalOnTimePayments, totalLatePayments, totalEarlyPayments));
+        metrics.setRiskLevel(determineRiskLevel(metrics));
+
+        return metrics;
+    }
+
+    private RepaymentTiming analyzeLoanRepaymentTiming(Loan loan) {
+        if (loan.getMaturityDate() == null || loan.getClosedDate() == null) {
+            return RepaymentTiming.UNKNOWN;
+        }
+        long daysDifference = ChronoUnit.DAYS.between(loan.getMaturityDate(), loan.getClosedDate());
+
+        if (daysDifference <= -7) { // Paid more than 7 days early
+            return RepaymentTiming.EARLY;
+        } else if (daysDifference <= 0) { // Paid on or before due date
+            return RepaymentTiming.ON_TIME;
+        } else if (daysDifference <= 30) { // Paid within 30 days late
+            return RepaymentTiming.LATE;
+        } else { // Paid more than 30 days late
+            return RepaymentTiming.VERY_LATE;
+        }
+    }
+
+    private PaymentBehavior analyzePaymentBehavior(Loan loan) {
+        PaymentBehavior behavior = new PaymentBehavior();
+
+        List<RepaymentSchedule> schedules = repaymentScheduleRepository.findByLoanIdOrderByDueDateAsc(loan.getId());
+        List<LoanRepayment> repayments = loanRepaymentRepository.findByLoanIdOrderByPaymentDateAsc(loan.getId());
+
+        for (RepaymentSchedule schedule : schedules) {
+            if (schedule.getStatus() == GeneralConfig.InstallmentStatus.PAID && schedule.getPaidDate() != null) {
+                long daysDifference = ChronoUnit.DAYS.between(schedule.getDueDate(), schedule.getPaidDate());
+
+                if (daysDifference < -3) {
+                    behavior.earlyPayments++;
+                } else if (daysDifference <= 3) {
+                    behavior.onTimePayments++;
+                } else {
+                    behavior.latePayments++;
+                    behavior.totalLateDays += daysDifference;
                 }
             }
+        }
+        return behavior;
+    }
 
-            double onTimePercentage = (double) onTimeLoans / totalLoans * 100;
+    private double calculatePaymentReliabilityScore(RepaymentBehaviorMetrics metrics,
+                                                    int totalOnTimePayments,
+                                                    int totalLatePayments,
+                                                    int totalEarlyPayments) {
+        int totalPayments = totalOnTimePayments + totalLatePayments + totalEarlyPayments;
+        if (totalPayments == 0) return 0;
 
-            if (onTimePercentage >= 90) return "GOOD";
-            if (onTimePercentage >= 70) return "AVERAGE";
+        // Weighted scoring: Early = 1.1, OnTime = 1.0, Late = 0.5
+        double weightedScore = (totalEarlyPayments * 1.1) + (totalOnTimePayments * 1.0) + (totalLatePayments * 0.5);
+        double baseScore = (weightedScore / totalPayments) * 100;
+
+        // Adjust for defaulted loans
+        double defaultPenalty = metrics.getDefaultRate() * 0.5;
+
+        // Adjust for completion rate
+        double completionBonus = metrics.getCompletionRate() * 0.2;
+
+        return Math.min(100, Math.max(0, baseScore - defaultPenalty + completionBonus));
+    }
+
+    private String determineBehaviorCategory(RepaymentBehaviorMetrics metrics) {
+        // Combine multiple factors for more accurate categorization
+        double reliabilityScore = metrics.getPaymentReliabilityScore();
+        double defaultRate = metrics.getDefaultRate();
+        double onTimeRate = metrics.getOnTimeRate();
+
+        // Excellent: High reliability, low default rate
+        if (reliabilityScore >= 85 && defaultRate <= 5 && onTimeRate >= 80) {
+            return "EXCELLENT";
+        }
+
+        // Good: Good reliability, acceptable default rate
+        if (reliabilityScore >= 70 && defaultRate <= 15 && onTimeRate >= 70) {
+            return "GOOD";
+        }
+
+        // Average: Moderate reliability
+        if (reliabilityScore >= 50 && defaultRate <= 30) {
+            return "AVERAGE";
+        }
+
+        // Poor: Low reliability or high default rate
+        if (reliabilityScore >= 30 || defaultRate <= 50) {
             return "POOR";
         }
 
-        private boolean isLoanRepaidOnTime(Loan loan) {
-            // Implement your logic to determine if loan was repaid on time
-            // This might check for late payments, default history, etc.
-            if (loan.getStatus() != GeneralConfig.LoanStatus.COMPLETED) {
-                return false; // Only consider completed loans
-            }
-            // Example logic - adjust based on your business rules
-            List<LoanRepayment> repayments = loanRepaymentRepository.findByLoanId(loan.getId());
-            long latePayments = repayments.stream()
-                    .filter(repayment -> repayment.getPaymentDate().isAfter(loan.getNextPaymentDueDate()))
-                    .count();
-
-            return latePayments == 0;
+        // Very Poor: Very low reliability
+        if (metrics.getCompletedLoans() > 0) {
+            return "VERY_POOR";
         }
+
+        // For active loans only, check current payment behavior
+        if (metrics.getActiveLoans() > 0 && metrics.getTotalLoans() == metrics.getActiveLoans()) {
+            return assessActiveLoanBehavior(metrics);
+        }
+
+        return "NO_HISTORY";
+    }
+
+    private String assessActiveLoanBehavior(RepaymentBehaviorMetrics metrics) {
+        // For borrowers with only active loans, assess current payment behavior
+        if (metrics.getPaymentReliabilityScore() >= 80) {
+            return "PROMISING";
+        } else if (metrics.getPaymentReliabilityScore() >= 60) {
+            return "NEW_BUT_GOOD";
+        } else if (metrics.getPaymentReliabilityScore() >= 40) {
+            return "NEEDS_MONITORING";
+        } else {
+            return "AT_RISK";
+        }
+    }
+
+    private double calculateTotalLateDays(Loan loan) {
+        List<RepaymentSchedule> schedules = repaymentScheduleRepository.findByLoanIdOrderByDueDateAsc(loan.getId());
+        double totalLateDays = 0;
+
+        for (RepaymentSchedule schedule : schedules) {
+            if (schedule.getPaidDate() != null && schedule.getPaidDate().isAfter(schedule.getDueDate())) {
+                totalLateDays += ChronoUnit.DAYS.between(schedule.getDueDate(), schedule.getPaidDate());
+            }
+        }
+
+        return totalLateDays;
+    }
+
+    private String determineRiskLevel(RepaymentBehaviorMetrics metrics) {
+        if (metrics.getDefaultRate() > 30) return "CRITICAL";
+        if (metrics.getDefaultRate() > 20) return "HIGH";
+        if (metrics.getDefaultRate() > 10) return "MEDIUM";
+        if (metrics.getPaymentReliabilityScore() < 40) return "MEDIUM";
+        if (metrics.getPaymentReliabilityScore() < 60) return "LOW";
+        return "VERY_LOW";
+    }
+
+    // Inner classes for metrics
+    /*
+    @Data
+    private static class RepaymentBehaviorMetrics {
+        int totalLoans;
+        int completedLoans;
+        int activeLoans;
+        int defaultedLoans;
+        double completionRate;
+        double onTimeRate;
+        double earlyRate;
+        double lateRate;
+        double defaultRate;
+        double avgLateDays;
+        double paymentReliabilityScore;
+        String riskLevel;
+    }
+
+    private enum RepaymentTiming {
+        EARLY, ON_TIME, LATE, VERY_LATE, UNKNOWN
+    }
+
+    private static class PaymentBehavior {
+        int earlyPayments = 0;
+        int onTimePayments = 0;
+        int latePayments = 0;
+        double totalLateDays = 0;
+    }
+    */
+
 
     @Override
     public List<BorrowerActivityDto> getRecentActivities(Long borrowerId) {
@@ -312,7 +510,6 @@ public class BorrowerServiceImpl implements BorrowerService {
     public Page<BorrowerActivityDto> getBorrowerActivities(Long borrowerId, Pageable pageable) {
         log.info("Fetching activities for borrower: {}, page: {}, size: {}",
                 borrowerId, pageable.getPageNumber(), pageable.getPageSize());
-
         try {
             Page<BorrowerActivity> activities = borrowerActivityRepository.findByBorrowerId(borrowerId, pageable);
             return activities.map(BorrowerActivityDto::fromEntity);
@@ -326,6 +523,7 @@ public class BorrowerServiceImpl implements BorrowerService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public Page<BorrowerActivityDto> searchActivities(ActivitySearchCriteria criteria, Pageable pageable) {
         log.info("Searching activities with criteria: {}", criteria);
         try {
@@ -354,7 +552,7 @@ public class BorrowerServiceImpl implements BorrowerService {
         }
     }
 
-
+/*
     @Override
     public BorrowerActivitySummaryDto getActivitySummary(Long borrowerId, LocalDate startDate, LocalDate endDate) {
         log.info("Getting activity summary for borrower {} from {} to {}", borrowerId, startDate, endDate);
@@ -540,6 +738,188 @@ public class BorrowerServiceImpl implements BorrowerService {
         }
     }
 
+*/
+
+    @Override
+    public BorrowerActivitySummaryDto getActivitySummary(Long borrowerId, LocalDate startDate, LocalDate endDate) {
+        log.info("Getting activity summary for borrower {} from {} to {}", borrowerId, startDate, endDate);
+
+        try {
+            // Set default dates if not provided (last 30 days)
+            if (startDate == null) {
+                startDate = LocalDate.now().minusDays(30);
+            }
+            if (endDate == null) {
+                endDate = LocalDate.now();
+            }
+
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+
+            // Fetch borrower with explicit fetch (or use findById which is already loaded)
+            Borrower borrower = borrowerRepository.findById(borrowerId).orElse(null);
+            if (borrower == null) {
+                log.info("Borrower not found with id: {}", borrowerId);
+                return createEmptySummary(borrowerId, startDate, endDate);
+            }
+
+            // Get borrower details BEFORE any session might close
+            String fullName = borrower.getFullName();
+            String firstName = borrower.getFirstName();
+            String lastName = borrower.getLastName();
+
+            // ===== 1. Get counts by activity type =====
+            List<Object[]> typeCounts = borrowerActivityRepository.countByBorrowerIdAndActivityTypeBetween(
+                    borrowerId, start, end);
+
+            Map<String, Integer> activityCounts = new HashMap<>();
+            Map<BorrowerActivityDto.ActivityType, Integer> activityCountByType = new HashMap<>();
+
+            int totalLoanActivitiesCount = 0;
+            int totalRepaymentActivitiesCount = 0;
+            int totalKycActivitiesCount = 0;
+            int totalSavingsActivitiesCount = 0;
+
+            String mostFrequentActivity = null;
+            int maxCount = 0;
+
+            for (Object[] row : typeCounts) {
+                String activityType = row[0].toString();
+                int count = ((Long) row[1]).intValue();
+
+                activityCounts.put(activityType, count);
+
+                // Map to enum if possible
+                try {
+                    BorrowerActivityDto.ActivityType enumType = BorrowerActivityDto.ActivityType.valueOf(activityType);
+                    activityCountByType.put(enumType, count);
+                } catch (IllegalArgumentException e) {
+                    log.debug("Activity type {} not in enum, skipping", activityType);
+                }
+
+                // Categorize activities
+                if (activityType.contains("LOAN") || activityType.contains("APPLICATION")) {
+                    totalLoanActivitiesCount += count;
+                } else if (activityType.contains("REPAYMENT")) {
+                    totalRepaymentActivitiesCount += count;
+                } else if (activityType.contains("KYC") || activityType.contains("VERIFIED")) {
+                    totalKycActivitiesCount += count;
+                } else if (activityType.contains("SAVING")) {
+                    totalSavingsActivitiesCount += count;
+                }
+
+                // Track most frequent activity
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostFrequentActivity = activityType;
+                }
+            }
+
+            // ===== 2. Get total activities =====
+            long totalActivities = borrowerActivityRepository.countByBorrowerIdAndActivityDateBetween(
+                    borrowerId, start, end);
+
+            // ===== 2.5 Calculate activities for this week and this month =====
+            LocalDate today = LocalDate.now();
+            LocalDate startOfWeek = today.with(java.time.DayOfWeek.MONDAY);
+            LocalDate startOfMonth = today.withDayOfMonth(1);
+
+            LocalDateTime startOfWeekDateTime = startOfWeek.atStartOfDay();
+            LocalDateTime startOfMonthDateTime = startOfMonth.atStartOfDay();
+            LocalDateTime nowDateTime = LocalDateTime.now();
+
+            long activitiesThisWeek = borrowerActivityRepository.countByBorrowerIdAndActivityDateBetween(
+                    borrowerId, startOfWeekDateTime, nowDateTime);
+            long activitiesThisMonth = borrowerActivityRepository.countByBorrowerIdAndActivityDateBetween(
+                    borrowerId, startOfMonthDateTime, nowDateTime);
+
+            // ===== 3. Get recent activities (last 5) - FIXED: Use DTO conversion safely =====
+            List<BorrowerActivity> recent = borrowerActivityRepository.findByBorrowerIdAndActivityDateBetweenOrderByActivityDateDesc(
+                    borrowerId, start, end, PageRequest.of(0, 5));
+
+
+            List<BorrowerActivityDto> recentActivities = recent.stream()
+                    .map(activity -> convertToActivityDtoSafe(activity,borrower.getFullName()))
+                    .collect(Collectors.toList());
+
+            // ===== 4. Get detailed activity lists - FIXED: Use safe conversion =====
+            List<BorrowerActivityDto> loanActivitiesList = getLoanActivities(borrowerId, start, end);
+            List<BorrowerActivityDto> repaymentActivitiesList = getRepaymentActivities(borrowerId, start, end);
+            List<BorrowerActivityDto> kycActivitiesList = getKycActivities(borrowerId, start, end);
+            List<BorrowerActivityDto> savingsActivitiesList = getSavingsActivities(borrowerId, start, end);
+
+            // ===== 5. Get last activity info =====
+            LocalDate lastActivityDate = null;
+            String lastActivityType = null;
+
+            if (!recent.isEmpty()) {
+                BorrowerActivity lastActivity = recent.get(0);
+                lastActivityDate = lastActivity.getActivityDate().toLocalDate();
+                lastActivityType = String.valueOf(lastActivity.getActivityType());
+            }
+
+            // ===== 6. Get loan performance metrics =====
+            Double onTimeRepaymentRate = calculateOnTimeRepaymentRate(borrowerId);
+
+            // ===== 7. Get meeting attendance =====
+            int meetingsAttended = 0;
+            int meetingsMissed = 0;
+
+            if (borrower.getGroup() != null) {
+                Object[] meetingStats = getMeetingAttendanceStats(borrowerId);
+                if (meetingStats != null) {
+                    meetingsAttended = ((Number) meetingStats[0]).intValue();
+                    meetingsMissed = ((Number) meetingStats[1]).intValue();
+                }
+            }
+
+            // ===== 8. Calculate activity trend =====
+            String activityTrend = calculateActivityTrend(borrowerId, startDate, endDate);
+
+            return BorrowerActivitySummaryDto.builder()
+                    .borrowerId(borrowerId)
+                    .borrowerName(fullName)
+                    .borrowerLastName(lastName)
+                    .borrowerFirstName(firstName)
+                    .summaryDate(LocalDate.now())
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .totalActivities((int) totalActivities)
+                    .loanActivitiesCount(totalLoanActivitiesCount)
+                    .repaymentActivitiesCount(totalRepaymentActivitiesCount)
+                    .kycActivitiesCount(totalKycActivitiesCount)
+                    .savingsActivitiesCount(totalSavingsActivitiesCount)
+                    .activitiesThisMonth((int) activitiesThisMonth)
+                    .activitiesThisWeek((int) activitiesThisWeek)
+                    .loanActivitiesList(loanActivitiesList)
+                    .repaymentActivitiesList(repaymentActivitiesList)
+                    .kycActivitiesList(kycActivitiesList)
+                    .savingsActivitiesList(savingsActivitiesList)
+                    .loanActivities(totalLoanActivitiesCount)
+                    .repaymentActivities(totalRepaymentActivitiesCount)
+                    .kycActivities(totalKycActivitiesCount)
+                    .savingsActivities(totalSavingsActivitiesCount)
+                    .activityCounts(activityCounts)
+                    .activityCountByType(activityCountByType)
+                    .mostFrequentActivity(mostFrequentActivity)
+                    .lastActivityDate(lastActivityDate)
+                    .lastActivityType(lastActivityType)
+                    .onTimeRepaymentRate(onTimeRepaymentRate)
+                    .meetingsAttended(meetingsAttended)
+                    .meetingsMissed(meetingsMissed)
+                    .activityTrend(activityTrend)
+                    .recentActivities(recentActivities)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error getting activity summary: {}", e.getMessage(), e);
+            return createEmptySummary(borrowerId, startDate, endDate);
+        }
+    }
+
+
+    // Add similar safe methods for repayment, kyc, savings activities
+
     private BorrowerActivitySummaryDto createEmptySummary(Long borrowerId, LocalDate startDate, LocalDate endDate) {
         return BorrowerActivitySummaryDto.builder()
                 .borrowerId(borrowerId)
@@ -586,6 +966,8 @@ public class BorrowerServiceImpl implements BorrowerService {
 
         return dto;
     }
+
+
 
     private Double calculateOnTimeRepaymentRate(Long borrowerId) {
         try {
@@ -666,73 +1048,126 @@ public class BorrowerServiceImpl implements BorrowerService {
         }
     }
 
-    private List<BorrowerActivityDto> getLoanActivities(Long borrowerId, LocalDateTime start, LocalDateTime end) {
+
+    private BorrowerDetails getBorrowerDetails(Long borrowerId) {
         try {
+            Borrower borrower = borrowerRepository.findById(borrowerId).orElse(null);
+            if (borrower == null) {
+                return new BorrowerDetails(null, "Unknown", null, null);
+            }
+            return new BorrowerDetails(
+                    borrower.getId(),
+                    borrower.getFullName(),
+                    borrower.getFirstName(),
+                    borrower.getLastName()
+            );
+        } catch (Exception e) {
+            log.warn("Could not fetch borrower details for ID: {}", borrowerId, e);
+            return new BorrowerDetails(null, "Unknown", null, null);
+        }
+    }
+    // Inner record class for borrower details
+    private record BorrowerDetails(Long id, String fullName, String firstName, String lastName) {}
+
+    private BorrowerActivityDto convertToActivityDtoSafe(BorrowerActivity activity, String borrowerFullName) {
+        if (activity == null) return null;
+        try {
+            return BorrowerActivityDto.builder()
+                    .id(activity.getId())
+                    .borrowerId(activity.getBorrower() != null ? activity.getBorrower().getId() : null)
+                    .borrowerName(borrowerFullName)
+                    .activityType(GeneralConfig.BorrowerActivityType.valueOf(activity.getActivityType().name()))
+                    .description(activity.getDescription())
+                    .details(activity.getDetails())
+                    .activityDate(activity.getActivityDate())
+                    .performedBy(activity.getPerformedBy())
+                    .performedByName(getPerformerName(activity.getPerformedBy(), activity.getPerformedByName()))
+                    .referenceType(activity.getReferenceType())
+                    .referenceId(activity.getReferenceId())
+                    .referenceNumber(activity.getReferenceNumber())
+                    .branchName(activity.getBranchName())
+                    .ipAddress(activity.getIpAddress())
+                    .userAgent(activity.getUserAgent())
+                    .sessionId(activity.getSessionId())
+                    .build();
+        } catch (Exception e) {
+            log.warn("Error converting activity to DTO: {}", e.getMessage());
+            return null;
+        }
+    }
+
+
+    private List<BorrowerActivityDto> getActivitiesByTypes(Long borrowerId, LocalDateTime start, LocalDateTime end, List<String> activityTypes, int maxResults) {
+        try {
+            // Get borrower details once for all activities
+            BorrowerDetails borrower = getBorrowerDetails(borrowerId);
             List<BorrowerActivity> activities = borrowerActivityRepository
                     .findByBorrowerIdAndActivityTypeInAndActivityDateBetween(
                             borrowerId,
-                            List.of("LOAN_APPLICATION_SUBMITTED", "LOAN_APPLICATION_APPROVED",
-                                    "LOAN_DISBURSED", "LOAN_CREATED"),
-                            start, end, PageRequest.of(0, 20));
+                            activityTypes,
+                            start, end,
+                            PageRequest.of(0, maxResults));
 
             return activities.stream()
-                    .map(this::convertToActivityDto)
+                    .map(activity -> convertToActivityDtoSafe(activity, borrower.fullName()))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.warn("Error getting loan activities: {}", e.getMessage());
+            log.warn("Error getting activities by types {}: {}", activityTypes, e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+
+    // Helper method to get performer name
+    private String getPerformerName(Long performedBy, String existingName) {
+        // If name is already set in the entity, use it
+        if (existingName != null && !existingName.isEmpty()) {
+            return existingName;
+        }
+
+        // Otherwise try to fetch from user repository
+        if (performedBy != null) {
+            try {
+                User performer = userRepository.findById(performedBy).orElse(null);
+                if (performer != null) {
+                    String firstName = performer.getFirstName() != null ? performer.getFirstName() : "";
+                    String lastName = performer.getLastName() != null ? performer.getLastName() : "";
+                    return (firstName + " " + lastName).trim();
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch performer name for user ID: {}", performedBy);
+            }
+        }
+        return null;
+    }
+
+    private List<BorrowerActivityDto> getLoanActivities(Long borrowerId, LocalDateTime start, LocalDateTime end) {
+        return getActivitiesByTypes(borrowerId, start, end,
+                List.of("LOAN_APPLICATION_SUBMITTED", "LOAN_APPLICATION_APPROVED",
+                        "LOAN_DISBURSED", "LOAN_CREATED", "LOAN_APPLICATION_CREATED"),
+                20);
     }
 
     private List<BorrowerActivityDto> getRepaymentActivities(Long borrowerId, LocalDateTime start, LocalDateTime end) {
-        try {
-            List<BorrowerActivity> activities = borrowerActivityRepository
-                    .findByBorrowerIdAndActivityTypeInAndActivityDateBetween(
-                            borrowerId,
-                            List.of("REPAYMENT_MADE", "REPAYMENT_RECEIVED", "INSTALLMENT_PAID"),
-                            start, end, PageRequest.of(0, 20));
-
-            return activities.stream()
-                    .map(this::convertToActivityDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Error getting repayment activities: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return getActivitiesByTypes(borrowerId, start, end,
+                List.of("REPAYMENT_MADE", "REPAYMENT_RECEIVED", "INSTALLMENT_PAID",
+                        "REPAYMENT_SCHEDULED", "REPAYMENT_OVERDUE", "REPAYMENT_PARTIAL"),
+                20);
     }
 
     private List<BorrowerActivityDto> getKycActivities(Long borrowerId, LocalDateTime start, LocalDateTime end) {
-        try {
-            List<BorrowerActivity> activities = borrowerActivityRepository
-                    .findByBorrowerIdAndActivityTypeInAndActivityDateBetween(
-                            borrowerId,
-                            List.of("BORROWER_KYC_VERIFIED", "KYC_UPDATED", "KYC_EXPIRED"),
-                            start, end, PageRequest.of(0, 20));
-
-            return activities.stream()
-                    .map(this::convertToActivityDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Error getting KYC activities: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return getActivitiesByTypes(borrowerId, start, end,
+                List.of("BORROWER_KYC_VERIFIED", "BORROWER_KYC_INITIATED", "BORROWER_KYC_REJECTED",
+                        "KYC_UPDATED", "KYC_EXPIRED", "DOCUMENT_VERIFIED", "DOCUMENT_REJECTED"),
+                20);
     }
 
     private List<BorrowerActivityDto> getSavingsActivities(Long borrowerId, LocalDateTime start, LocalDateTime end) {
-        try {
-            List<BorrowerActivity> activities = borrowerActivityRepository
-                    .findByBorrowerIdAndActivityTypeInAndActivityDateBetween(
-                            borrowerId,
-                            List.of("SAVINGS_DEPOSIT", "SAVINGS_WITHDRAWAL", "SAVINGS_CREATED"),
-                            start, end, PageRequest.of(0, 20));
-
-            return activities.stream()
-                    .map(this::convertToActivityDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Error getting savings activities: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return getActivitiesByTypes(borrowerId, start, end,
+                List.of("SAVINGS_DEPOSIT", "SAVINGS_WITHDRAWAL", "SAVINGS_CREATED",
+                        "SAVINGS_INTEREST_APPLIED"),
+                20);
     }
 
     @Override
@@ -743,13 +1178,17 @@ public class BorrowerServiceImpl implements BorrowerService {
             LocalDateTime fromDate = LocalDateTime.now().minusDays(days);
             LocalDateTime toDate = LocalDateTime.now();
 
-            List<BorrowerActivity> activities = borrowerActivityRepository.findByBorrowerIdAndActivityDateBetweenOrderByActivityDateDesc(
-                    borrowerId, fromDate, toDate, PageRequest.of(0, 100));
+            // Get borrower details once
+            BorrowerDetails borrower = getBorrowerDetails(borrowerId);
 
+            List<BorrowerActivity> activities = borrowerActivityRepository
+                    .findByBorrowerIdAndActivityDateBetweenOrderByActivityDateDesc(
+                            borrowerId, fromDate, toDate, PageRequest.of(0, 100));
 
-            // Group by date
+            // Group by date using safe DTO conversion
             Map<String, List<BorrowerActivityDto>> groupedByDate = activities.stream()
-                    .map(BorrowerActivityDto::fromEntity)
+                    .map(activity -> convertToActivityDtoSafe(activity, borrower.fullName()))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.groupingBy(
                             activity -> activity.getActivityDate().toLocalDate().toString(),
                             LinkedHashMap::new,
@@ -760,7 +1199,6 @@ public class BorrowerServiceImpl implements BorrowerService {
             List<BorrowerActivityDto.TimelineGroup> timeline = new ArrayList<>();
             for (Map.Entry<String, List<BorrowerActivityDto>> entry : groupedByDate.entrySet()) {
                 timeline.add(new BorrowerActivityDto.TimelineGroup(entry.getKey(), entry.getValue()));
-
             }
 
             return timeline;
@@ -770,6 +1208,7 @@ public class BorrowerServiceImpl implements BorrowerService {
             return new ArrayList<>();
         }
     }
+
 
 
     @Override
@@ -2316,6 +2755,7 @@ public class BorrowerServiceImpl implements BorrowerService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<BorrowerActiveLoanDto> getBorrowerActiveLoans(Long borrowerId) {
         log.info("Fetching active loans for borrower: {}", borrowerId);
 
@@ -2406,7 +2846,7 @@ public class BorrowerServiceImpl implements BorrowerService {
         return null;
     }
 
-
+   // @Transactional(readOnly = true)
     private BorrowerActiveLoanDto mapToActiveLoanDto(Loan loan) {
         if (loan == null) return null;
 
@@ -2420,6 +2860,7 @@ public class BorrowerServiceImpl implements BorrowerService {
         return BorrowerActiveLoanDto.builder()
                 .id(loan.getId())
                 .loanAccountNumber(loan.getLoanAccountNumber())
+                .loanApplicationId(loan.getLoanApplication().getId())
                 .principalAmount(loan.getPrincipalAmount())
                 .outstandingBalance(loan.getOutstandingBalance() != null ?
                         loan.getOutstandingBalance() : loan.getPrincipalAmount())
@@ -2491,7 +2932,6 @@ public class BorrowerServiceImpl implements BorrowerService {
         if (loan == null || loan.getPrincipalAmount() == null || loan.getTenureMonths() == null) {
             return BigDecimal.ZERO;
         }
-
         // Simple calculation - you may want to use your actual repayment calculation logic
         BigDecimal monthlyPrincipal = loan.getPrincipalAmount()
                 .divide(BigDecimal.valueOf(loan.getTenureMonths()), 2, RoundingMode.HALF_UP);
@@ -2530,6 +2970,7 @@ public class BorrowerServiceImpl implements BorrowerService {
      * Alternative simplified version if you don't need all the detailed metrics
      */
     @Override
+    @Transactional(readOnly = true)
     public List<BorrowerLoanHistoryDto> getBorrowerLoanHistory(Long borrowerId) {
         log.info("Fetching loan history for borrower ID: {}", borrowerId);
 
@@ -2555,6 +2996,7 @@ public class BorrowerServiceImpl implements BorrowerService {
                     return BorrowerLoanHistoryDto.builder()
                             .id(loan.getId())
                             .loanAccountNumber(loan.getLoanAccountNumber())
+                            .loanApplicationId(loan.getLoanApplication().getId())
                             .principalAmount(loan.getPrincipalAmount())
                             .totalPaid(calculateTotalPaid(loan))
                             .outstandingBalance(loan.getOutstandingBalance())

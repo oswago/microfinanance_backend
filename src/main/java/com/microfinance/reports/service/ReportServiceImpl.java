@@ -349,9 +349,6 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public AuditReportDto generateAuditReport(ReportFilterDto filter, User currentUser) {
         log.info("Generating audit report");
-
-
-        
         LocalDate startDate = filter.getStartDate() != null ? filter.getStartDate() : LocalDate.now().minusMonths(1);
         LocalDate endDate = filter.getEndDate() != null ? filter.getEndDate() : LocalDate.now();
         log.debug(">>>getUserActivityStats called with startDate: {}, endDate: {}", startDate, endDate);
@@ -544,8 +541,7 @@ public class ReportServiceImpl implements ReportService {
         return auditLogRepository.findMaxTimestampByUserAndPeriod(userId, startDateTime, endDateTime);
     }
 
-
-
+/*
     private List<UserActivityDto> getUserActivityStats(LocalDate startDate, LocalDate endDate) {
         // Convert LocalDate to LocalDateTime
         LocalDateTime startDateTime = startDate.atStartOfDay(); // 00:00:00
@@ -566,6 +562,55 @@ public class ReportServiceImpl implements ReportService {
                         .build())
                 .collect(Collectors.toList());
     }
+*/
+private List<UserActivityDto> getUserActivityStats(LocalDate startDate, LocalDate endDate) {
+    LocalDateTime startDateTime = startDate.atStartOfDay();
+    LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+    Pageable pageable = PageRequest.of(0, 10);
+
+    List<Object[]> results = auditLogRepository.getUserActivityStatsWithUserDetails(
+            startDateTime, endDateTime, pageable);
+
+    return results.stream()
+            .map(result -> {
+                int index = 0;
+                Long userId = (Long) result[index++];
+                String username = (String) result[index++];
+                String fullName = (String) result[index++];
+                String email = (String) result[index++];
+                String role = (String) result[index++];
+                Integer actionCount = ((Long) result[index++]).intValue();
+                LocalDateTime lastActive = (LocalDateTime) result[index++];
+                LocalDateTime firstActive = (LocalDateTime) result[index++];
+                String lastAction = (String) result[index++];
+                String lastIpAddress = (String) result[index++];
+                Integer uniqueSessions = ((Long) result[index++]).intValue();
+
+                // Calculate average actions per day in Java
+                Double avgActionsPerDay = null;
+                if (firstActive != null && lastActive != null && actionCount > 0) {
+                    long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(firstActive, lastActive) + 1;
+                    avgActionsPerDay = (double) actionCount / daysBetween;
+                }
+
+                return UserActivityDto.builder()
+                        .userId(userId)
+                        .username(username)
+                        .fullName(fullName)
+                        .email(email)
+                        .role(role)
+                        .actionCount(actionCount)
+                        .lastActive(lastActive)
+                        .firstActive(firstActive)
+                        .lastAction(lastAction)
+                        .lastIpAddress(lastIpAddress)
+                        .uniqueSessions(uniqueSessions)
+                        .averageActionsPerDay(avgActionsPerDay)
+                        .build();
+            })
+            .collect(Collectors.toList());
+}
+
 
 
     private List<SecurityEventDto> getRecentSecurityEvents(LocalDate since) {

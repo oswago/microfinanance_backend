@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class RepaymentDto {
@@ -25,6 +26,16 @@ public class RepaymentDto {
     private String notes;
     
     private Boolean allocateToOldest = true;
+
+    private Long id;
+    private String receiptNumber;
+    private String status;
+    // Loan reference
+    private String loanAccountNumber;
+    // User who recorded
+    private String recordedBy;
+    private String recordedByName;
+    private LocalDateTime createdAt;
 }
 
 

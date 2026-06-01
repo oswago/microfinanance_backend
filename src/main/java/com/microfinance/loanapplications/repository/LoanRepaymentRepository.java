@@ -771,6 +771,5 @@ public interface LoanRepaymentRepository extends JpaRepository<LoanRepayment, Lo
     List<LoanRepayment> findByLoanBorrowerIdOrderByCreatedAtDesc(@Param("borrowerId") Long borrowerId, Pageable pageable);
 
 
-
-
+    List<LoanRepayment> findByLoanIdOrderByPaymentDateAsc(Long id);
 }

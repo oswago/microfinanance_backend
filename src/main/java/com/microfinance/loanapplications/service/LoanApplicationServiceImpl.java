@@ -65,7 +65,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private LoanProductRepository loanProductRepository;
 
     @Autowired
-    private BranchRepository branchRepository; // If needed
+    private BranchRepository branchRepository;
 
 
 
@@ -678,7 +678,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .orElseThrow(() -> new EntityNotFoundException("Loan product not found: " + dto.getLoanProductId()));
 
         Branch branch = systemService.getBranchForUser(currentUser);
-
+        if (branch == null) {  // ✅ Use == null, not .equals(null)
+            Optional<Branch> fetchBranch = branchRepository.findById(dto.getBranchId());
+            if (fetchBranch.isPresent()) {
+                branch = fetchBranch.get();
+            }
+        }
         // Set fields
         application.setBorrower(borrower);
         application.setLoanProduct(loanProduct);
@@ -687,6 +692,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         application.setTenureMonths(dto.getTenureMonths());
         application.setTenureUnit(dto.getTenureUnit());
         application.setPurpose(dto.getPurpose());
+        application.setPurposeCategory(dto.getPurposeCategory());
         application.setAdditionalNotes(dto.getAdditionalNotes());
         application.setCreatedBy(currentUser.getId());
         application.setCreatedByUser(currentUser);

@@ -1,5 +1,6 @@
 package com.microfinance.base.service;
 
+import com.microfinance.audit.service.AuditService;
 import com.microfinance.base.dto.*;
 import com.microfinance.base.entity.MfaBackupCode;
 import com.microfinance.base.entity.RefreshToken;
@@ -12,7 +13,9 @@ import com.microfinance.base.repository.UserSessionRepository;
 import com.microfinance.base.security.UserPrincipal;
 import com.microfinance.exception.TooManyRequestsException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,13 +32,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final AuditService auditService;
     private final CustomUserDetailsService userDetailsService;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -51,6 +55,10 @@ public class AuthService {
             throw new TooManyRequestsException("Too many login attempts. Please try again later.");
         }
 
+        String ipAddress = getClientIP(request);
+        String userAgent = request.getHeader("User-Agent");
+
+
         try {
             // Attempt authentication
             Authentication authentication = authenticationManager.authenticate(
@@ -65,8 +73,29 @@ public class AuthService {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             User user = userPrincipal.getUser();
 
+            // Log successful login attempt before MFA check
+            auditService.logLoginAttempt(
+                    loginRequest.getUsername(),
+                    ipAddress,
+                    userAgent,
+                    true,
+                    null
+            );
+
+
             // Check if MFA is enabled
             if (Boolean.TRUE.equals(user.getMfaEnabled())) {
+
+                // Log that MFA is required
+                auditService.logLoginAction(
+                        user.getId(),
+                        user.getUsername(),
+                        ipAddress,
+                        userAgent,
+                        true,
+                        "MFA verification required"
+                );
+
                 // Return temporary token for MFA verification
                 String mfaToken = jwtService.generateMfaToken(userPrincipal);
                 return new AuthResponse(mfaToken, jwtService.getMfaExpiration(), user);
@@ -82,6 +111,17 @@ public class AuthService {
             user.setAccountLockedUntil(null);
             userRepository.save(user);
 
+            // Log successful login
+            auditService.logLoginAction(
+                    user.getId(),
+                    user.getUsername(),
+                    ipAddress,
+                    userAgent,
+                    true,
+                    null
+            );
+
+
             // CREATE SESSION RECORD - ADD THIS
             createUserSession(user, request, jwt);
 
@@ -91,12 +131,32 @@ public class AuthService {
             return new AuthResponse(jwt, refreshToken, jwtService.getJwtExpiration(), user);
 
         } catch (BadCredentialsException e) {
+            // Log failed login attempt
+            auditService.logLoginAttempt(
+                    loginRequest.getUsername(),
+                    ipAddress,
+                    userAgent,
+                    false,
+                    "Invalid credentials"
+            );
+
             // Increment failed login attempts safely
             userRepository.findByUsername(loginRequest.getUsername()).ifPresent(user -> {
                 user.incrementFailedLoginAttempts();
 
                 // Lock account after 5 failed attempts for 30 minutes
                 if (user.getFailedLoginAttempts() >= 5) {
+                    // Log account lockout
+                    auditService.logLoginAction(
+                            user.getId(),
+                            user.getUsername(),
+                            ipAddress,
+                            userAgent,
+                            false,
+                            "Account locked due to multiple failed attempts"
+                    );
+
+
                     user.setAccountLockedUntil(LocalDateTime.now().plusMinutes(30));
                 }
 
@@ -106,9 +166,25 @@ public class AuthService {
             // Re-throw BadCredentialsException to trigger 401
             throw e;
         } catch (AccessDeniedException e) {
+            // Log access denied
+            auditService.logLoginAttempt(
+                    loginRequest.getUsername(),
+                    ipAddress,
+                    userAgent,
+                    false,
+                    "Access denied: " + e.getMessage()
+            );
+
             // Forward to exception handler to trigger 403
             throw e;
         } catch (Exception e) {
+            auditService.logLoginAttempt(
+                    loginRequest.getUsername(),
+                    ipAddress,
+                    userAgent,
+                    false,
+                    "Unexpected error: " + e.getMessage()
+            );
             // Catch other exceptions for 500 Internal Server Error
             throw new RuntimeException("An unexpected error occurred during login", e);
         }
@@ -382,17 +458,89 @@ public class AuthService {
         return new AuthResponse(newAccessToken, newRefreshToken, jwtService.getJwtExpiration(), user);
     }
 
+
     @Transactional
     public void logout(String token) {
         String username = jwtService.extractUsername(token.substring(7));
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         // Revoke all refresh tokens for this user
         refreshTokenRepository.revokeAllUserTokens(user);
 
         SecurityContextHolder.clearContext();
     }
+
+
+    @Transactional
+    public void logout(String token, HttpServletRequest request) {
+        try {
+            String jwtToken = token.substring(7); // Remove "Bearer " prefix
+            String username = jwtService.extractUsername(jwtToken);
+
+            // Get user details before revoking
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            // Get client information
+            String ipAddress = getClientIP(request);
+            String userAgent = request.getHeader("User-Agent");
+            String sessionId = request.getSession().getId();
+
+            // DEACTIVATE the session (don't delete it)
+            UserSession userSession = userSessionRepository
+                    .findBySessionIdAndActiveTrue(sessionId)
+                    .orElse(null);
+
+            if (userSession != null) {
+                userSession.setActive(false);
+                userSession.setLogoutTime(LocalDateTime.now());
+                userSession.setTokenRevoked(true);
+                userSession.setRevokedAt(LocalDateTime.now());
+                userSessionRepository.save(userSession);
+
+                log.info("Session deactivated for user: {}, sessionId: {}", username, sessionId);
+            }
+
+
+            // Log logout action before revoking tokens
+            auditService.logLogoutAction(
+                    user.getId(),
+                    user.getUsername(),
+                    ipAddress,
+                    sessionId
+            );
+
+            // Revoke all refresh tokens for this user
+            refreshTokenRepository.revokeAllUserTokens(user);
+
+            // Invalidate session if exists
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            // Clear security context
+            SecurityContextHolder.clearContext();
+          //  log.info("User {} logged out successfully from IP: {}", username, ipAddress);
+        } catch (Exception e) {
+           // log.error("Error during logout for token: {}", e.getMessage(), e);
+            // Still try to log the logout attempt even if something fails
+            try {
+                String jwtToken = token.substring(7);
+                String username = jwtService.extractUsername(jwtToken);
+
+                auditService.logLoginAttempt(
+                        username,
+                        getClientIP(request),
+                        request.getHeader("User-Agent"),
+                        false,
+                        "Logout error: " + e.getMessage()
+                );
+            } catch (Exception ignored) {
+                // Ignore logging errors during logout failure
+            }
+            throw new RuntimeException("Logout failed: " + e.getMessage());
+        }
+    }
+
 
 
     private String generateRefreshToken(UserDetails userDetails) {
@@ -425,4 +573,83 @@ public class AuthService {
 
         mfaBackupCodeRepository.saveAll(mfaBackupCodes);
     }
+
+
+    /**
+     * Simple token verification - returns User if valid, null if invalid
+     */
+    public User verifyAndGetUser(String token) {
+        try {
+            // Handle null token
+            if (token == null) {
+                log.warn("Token is null");
+                return null;
+            }
+            // Extract JWT token
+            String jwtToken = token;
+            if (token.startsWith("Bearer ")) {
+                jwtToken = token.substring(7);
+            }
+
+            // Check if token is valid after extraction
+            if (jwtToken == null || jwtToken.trim().isEmpty()) {
+                log.warn("JWT token is empty");
+                return null;
+            }
+
+            // Validate token - catch any exceptions from jwtService
+            boolean isValid;
+            try {
+                isValid = jwtService.validateToken(jwtToken);
+            } catch (Exception e) {
+                log.error("JWT validation error: {}", e.getMessage());
+                return null;
+            }
+
+            if (!isValid) {
+                log.warn("Token is invalid");
+                return null;
+            }
+
+            // Extract username - catch any exceptions
+            String username;
+            try {
+                username = jwtService.extractUsername(jwtToken);
+            } catch (Exception e) {
+                log.error("Failed to extract username from token: {}", e.getMessage());
+                return null;
+            }
+
+            if (username == null || username.trim().isEmpty()) {
+                log.warn("No username found in token");
+                return null;
+            }
+            // Find user
+            User user = userRepository.findByUsername(username).orElse(null);
+
+            if (user == null) {
+                log.warn("User not found for username: {}", username);
+                return null;
+            }
+            // Check if user is active
+            if (user.getActive() == null || !user.getActive()) {
+                log.warn("User is inactive: {}", username);
+                return null;
+            }
+            // Check if account is locked
+            if (user.getAccountLockedUntil() != null &&
+                    user.getAccountLockedUntil().isAfter(LocalDateTime.now())) {
+                log.warn("Account is locked until: {}", user.getAccountLockedUntil());
+                return null;
+            }
+            log.debug("Token verified successfully for user: {}", username);
+            return user;
+
+        } catch (Exception e) {
+            log.error("Unexpected error in token verification: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+
 }

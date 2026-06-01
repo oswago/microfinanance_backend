@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public interface NotificationService {
     
@@ -56,4 +57,30 @@ public interface NotificationService {
 
     @Transactional
     void markNotificationAsRead(Long notificationId, Long userId);
+
+    void markAllNotificationsAsRead(Long userId);
+
+    void createLoanApplicationSubmittedNotification(Long applicationId, String applicationNumber, Long borrowerId);
+
+    void createLoanApprovedNotification(Long applicationId, String applicationNumber, Long approverId, Long borrowerId);
+
+    void createLoanRejectedNotification(Long applicationId, String applicationNumber, String reason, Long borrowerId);
+
+    void createLoanDisbursedNotification(Long loanId, String loanAccountNumber, Long borrowerId);
+
+    void createRepaymentReceivedNotification(Long loanId, String loanAccountNumber, BigDecimal amount, Long borrowerId);
+
+    void createDocumentVerifiedNotification(Long documentId, String documentName, Long borrowerId);
+
+    void createDocumentRejectedNotification(Long documentId, String documentName, String reason, Long borrowerId);
+
+    void createKycCompletedNotification(Long borrowerId);
+
+    void createKycExpiringNotification(Long borrowerId, int daysUntilExpiry);
+
+    void createOverdueNotification(Long loanId, String loanAccountNumber, int daysOverdue, Long borrowerId);
+
+    void createPaymentReminderNotification(Long loanId, String loanAccountNumber, LocalDate dueDate, BigDecimal amount, Long borrowerId);
+
+    void createGroupActivityNotification(Long groupId, String groupName, String activityType, Long memberId);
 }

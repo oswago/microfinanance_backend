@@ -100,7 +100,7 @@ public class LoanApprovalController {
         return ResponseEntity.ok(pendingApprovals);
     }
 
-    /**
+    /**stats/user
      * Get approval statistics for the current user
      */
     @GetMapping("/stats/my")

@@ -27,6 +27,8 @@ public class InAppNotificationDto {
     private String icon;
     private String color;
     private LocalDateTime createdAt;
+    private String timeAgo;
+
     
     public static InAppNotificationDto fromEntity(InAppNotification notification) {
         if (notification == null) return null;
@@ -50,6 +52,23 @@ public class InAppNotificationDto {
                 .icon(notification.getIcon())
                 .color(notification.getColor())
                 .createdAt(notification.getCreatedAt())
+                .timeAgo(getTimeAgo(notification.getCreatedAt()))
                 .build();
     }
+
+    private static String getTimeAgo(LocalDateTime dateTime) {
+        if (dateTime == null) return "";
+
+        LocalDateTime now = LocalDateTime.now();
+        long seconds = java.time.Duration.between(dateTime, now).getSeconds();
+
+        if (seconds < 60) return "Just now";
+        if (seconds < 3600) return (seconds / 60) + " minutes ago";
+        if (seconds < 86400) return (seconds / 3600) + " hours ago";
+        if (seconds < 604800) return (seconds / 86400) + " days ago";
+        if (seconds < 2592000) return (seconds / 604800) + " weeks ago";
+
+        return dateTime.toLocalDate().toString();
+    }
+
 }

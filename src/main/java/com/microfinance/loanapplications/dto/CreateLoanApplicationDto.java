@@ -23,7 +23,7 @@ public class CreateLoanApplicationDto {
     // Loan Amount and Terms
     @NotNull(message = "Applied amount is required")
     @DecimalMin(value = "1000.0", message = "Minimum loan amount is 1000")
-    @DecimalMax(value = "1000000.0", message = "Maximum loan amount is 1,000,000")
+    @DecimalMax(value = "100000000.0", message = "Maximum loan amount is 100,000,000")
     private BigDecimal appliedAmount;
 
     @NotNull(message = "Tenure is required")

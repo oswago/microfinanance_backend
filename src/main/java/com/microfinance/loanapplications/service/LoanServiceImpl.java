@@ -715,7 +715,7 @@ public class LoanServiceImpl implements LoanService {
         Integer minDays = minDaysOverdue != null ? minDaysOverdue : 1;
 
         // Fetch overdue loans from repository
-        Page<Loan> loansPage = loanRepository.findOverdueLoansTest(
+        Page<Loan> loansPage = loanRepository.findOverdueLoans(
                 effectiveBranchId, effectiveOfficerId, minDays, maxDaysOverdue, pageable);
 
         log.debug("Found {} overdue loans", loansPage.getNumberOfElements());

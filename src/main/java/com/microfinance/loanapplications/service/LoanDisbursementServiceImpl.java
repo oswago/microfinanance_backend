@@ -1111,7 +1111,7 @@ public class LoanDisbursementServiceImpl implements LoanDisbursementService {
         LocalDate startOfMonth = now.withDayOfMonth(1);
 
         // Count pending disbursements (APPROVED loans not yet disbursed)
-        long pendingCount = loanRepository.countByStatus(GeneralConfig.LoanStatus.APPROVED);
+        long pendingCount = loanRepository.countByStatus(GeneralConfig.LoanStatus.PENDING_DISBURSEMENT);
 
         // Calculate today's disbursements
         BigDecimal todayAmount = loanRepository.sumDisbursedAmountForToday(

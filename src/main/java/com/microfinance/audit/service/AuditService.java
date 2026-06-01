@@ -69,6 +69,15 @@ public interface AuditService {
     BorrowerActivityDto logBorrowerStandardActivity(Long borrowerId, GeneralConfig.BorrowerActivityType activityType,
                                                     String description, Long performedBy, String referenceType, Long referenceId);
 
+    @Async
+    void logLoginAction(Long userId, String username, String ipAddress, String userAgent, boolean success, String failureReason);
+
+    @Async
+    void logLogoutAction(Long userId, String username, String ipAddress, String sessionId);
+
+    @Async
+    void logLoginAttempt(String username, String ipAddress, String userAgent, boolean success, String failureReason);
+
     //Genaral Log Method that logs to acivity logs, borrower activity logs and audit Logs
     @Async
     void masterAuditLogs(

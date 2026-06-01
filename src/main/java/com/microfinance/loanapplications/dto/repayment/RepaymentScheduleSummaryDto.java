@@ -22,4 +22,5 @@ public class RepaymentScheduleSummaryDto {
     private String status;
     private Boolean isOverdue;
     private LocalDate paidDate;
+    private BigDecimal totalDue;
 }

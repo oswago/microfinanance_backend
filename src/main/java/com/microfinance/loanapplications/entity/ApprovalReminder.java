@@ -16,9 +16,9 @@ import java.time.LocalDateTime;
 @Table(name = "approval_reminders",
        indexes = {
            @Index(name = "idx_approver_id", columnList = "approver_id"),
-           @Index(name = "idx_application_id", columnList = "application_id"),
+           @Index(name = "idx_application_id_apprvlrem", columnList = "application_id"),
            @Index(name = "idx_due_date", columnList = "due_date"),
-           @Index(name = "idx_status", columnList = "is_dismissed, due_date"),
+           @Index(name = "idx_status_aprvlrem", columnList = "is_dismissed, due_date"),
            @Index(name = "idx_reminder_type", columnList = "reminder_type"),
            @Index(name = "idx_priority", columnList = "priority")
        })

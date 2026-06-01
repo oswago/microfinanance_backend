@@ -235,7 +235,8 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
                 List.of(
                         GeneralConfig.LoanApplicationStatus.SUBMITTED,
                         GeneralConfig.LoanApplicationStatus.UNDER_REVIEW,
-                        GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL
+                        GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL,
+                        GeneralConfig.LoanApplicationStatus.PENDING_FINAL_APPROVAL
                 )
         );
     }
@@ -248,7 +249,7 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     LEFT JOIN la.branch b
     LEFT JOIN la.loanProduct lp
     LEFT JOIN la.borrower br
-    WHERE la.status IN ('SUBMITTED', 'UNDER_REVIEW', 'PENDING_APPROVAL')
+    WHERE la.status IN ('SUBMITTED', 'UNDER_REVIEW', 'PENDING_APPROVAL','PENDING_FINAL_APPROVAL')
     AND (:userId IS NULL OR la.createdBy = :userId)
     AND (:userBranchId IS NULL OR b.id = :userBranchId)
     AND (:branchId IS NULL OR b.id = :branchId)
@@ -281,7 +282,7 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     LEFT JOIN la.branch b
     LEFT JOIN la.loanProduct lp
     LEFT JOIN la.borrower br
-    WHERE la.status IN ('SUBMITTED', 'UNDER_REVIEW', 'PENDING_APPROVAL')
+    WHERE la.status IN ('SUBMITTED', 'UNDER_REVIEW', 'PENDING_APPROVAL','PENDING_FINAL_APPROVAL')
     AND la.submittedDate IS NOT NULL
     ORDER BY 
         CASE 

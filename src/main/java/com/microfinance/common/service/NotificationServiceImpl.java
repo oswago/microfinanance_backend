@@ -359,7 +359,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
 
-    // Implementation
+    // User Notitifications Section///
     @Override
     public Page<InAppNotificationDto> getUserNotifications(Long userId, Pageable pageable) {
         Page<InAppNotification> notifications = inAppNotificationRepository
@@ -376,6 +376,344 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void markNotificationAsRead(Long notificationId, Long userId) {
         inAppNotificationRepository.markAsRead(notificationId, LocalDateTime.now(), userId);
+    }
+
+    @Override
+    public void markAllNotificationsAsRead(Long userId) {
+        log.info("Marking all notifications as read for user: {}", userId);
+        inAppNotificationRepository.markAllAsReadForUser(userId, LocalDateTime.now(), userId);
+    }
+
+    @Override
+    public void createLoanApplicationSubmittedNotification(Long applicationId, String applicationNumber, Long borrowerId) {
+        log.info("Creating loan application submitted notification for application: {}", applicationNumber);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("LOAN_APPLICATION_SUBMITTED")
+                .title("Loan Application Submitted")
+                .message(String.format("Your loan application #%s has been successfully submitted and is under review.", applicationNumber))
+                .referenceType("LOAN_APPLICATION")
+                .referenceId(applicationId)
+                .referenceNumber(applicationNumber)
+                .isRead(false)
+                .priority("MEDIUM")
+                .icon("pi-file-edit")
+                .color("#3b82f6")
+                .actionUrl("/loan-applications/" + applicationId)
+                .actionLabel("View Application")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createLoanApprovedNotification(Long applicationId, String applicationNumber, Long approverId, Long borrowerId) {
+        log.info("Creating loan approved notification for application: {}", applicationNumber);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("LOAN_APPROVED")
+                .title("Loan Application Approved!")
+                .message(String.format("Great news! Your loan application #%s has been approved. Loan disbursement will follow shortly.", applicationNumber))
+                .referenceType("LOAN_APPLICATION")
+                .referenceId(applicationId)
+                .referenceNumber(applicationNumber)
+                .isRead(false)
+                .priority("HIGH")
+                .icon("pi-check-circle")
+                .color("#10b981")
+                .actionUrl("/loan-applications/" + applicationId)
+                .actionLabel("View Details")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createLoanRejectedNotification(Long applicationId, String applicationNumber, String reason, Long borrowerId) {
+        log.info("Creating loan rejected notification for application: {}", applicationNumber);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("LOAN_REJECTED")
+                .title("Loan Application Update")
+                .message(String.format("We regret to inform you that your loan application #%s was not approved. Reason: %s", applicationNumber, reason))
+                .referenceType("LOAN_APPLICATION")
+                .referenceId(applicationId)
+                .referenceNumber(applicationNumber)
+                .isRead(false)
+                .priority("HIGH")
+                .icon("pi-times-circle")
+                .color("#ef4444")
+                .actionUrl("/loan-applications/" + applicationId)
+                .actionLabel("View Details")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createLoanDisbursedNotification(Long loanId, String loanAccountNumber, Long borrowerId) {
+        log.info("Creating loan disbursed notification for loan: {}", loanAccountNumber);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("LOAN_DISBURSED")
+                .title("Loan Disbursed!")
+                .message(String.format("Your loan #%s has been successfully disbursed to your account.", loanAccountNumber))
+                .referenceType("LOAN")
+                .referenceId(loanId)
+                .referenceNumber(loanAccountNumber)
+                .isRead(false)
+                .priority("HIGH")
+                .icon("pi-money-bill")
+                .color("#10b981")
+                .actionUrl("/loans/" + loanId)
+                .actionLabel("View Loan")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createRepaymentReceivedNotification(Long loanId, String loanAccountNumber, BigDecimal amount, Long borrowerId) {
+        log.info("Creating repayment received notification for loan: {}", loanAccountNumber);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("REPAYMENT_RECEIVED")
+                .title("Repayment Received")
+                .message(String.format("We have received your repayment of %s for loan #%s.",
+                        formatCurrency(amount), loanAccountNumber))
+                .referenceType("LOAN")
+                .referenceId(loanId)
+                .referenceNumber(loanAccountNumber)
+                .isRead(false)
+                .priority("MEDIUM")
+                .icon("pi-credit-card")
+                .color("#10b981")
+                .actionUrl("/loans/" + loanId)
+                .actionLabel("View Loan")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createDocumentVerifiedNotification(Long documentId, String documentName, Long borrowerId) {
+        log.info("Creating document verified notification for document: {}", documentName);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("DOCUMENT_VERIFIED")
+                .title("Document Verified")
+                .message(String.format("Your document '%s' has been successfully verified.", documentName))
+                .referenceType("DOCUMENT")
+                .referenceId(documentId)
+                .referenceNumber(documentName)
+                .isRead(false)
+                .priority("LOW")
+                .icon("pi-check-circle")
+                .color("#10b981")
+                .actionUrl("/documents")
+                .actionLabel("View Documents")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createDocumentRejectedNotification(Long documentId, String documentName, String reason, Long borrowerId) {
+        log.info("Creating document rejected notification for document: {}", documentName);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("DOCUMENT_REJECTED")
+                .title("Document Requires Attention")
+                .message(String.format("Your document '%s' was rejected. Reason: %s. Please upload a corrected version.",
+                        documentName, reason))
+                .referenceType("DOCUMENT")
+                .referenceId(documentId)
+                .referenceNumber(documentName)
+                .isRead(false)
+                .priority("HIGH")
+                .icon("pi-times-circle")
+                .color("#ef4444")
+                .actionUrl("/documents/upload")
+                .actionLabel("Upload Again")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createKycCompletedNotification(Long borrowerId) {
+        log.info("Creating KYC completed notification for borrower: {}", borrowerId);
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("KYC_COMPLETED")
+                .title("KYC Verification Complete")
+                .message("Your KYC verification has been successfully completed. You can now apply for loans.")
+                .referenceType("BORROWER")
+                .referenceId(borrowerId)
+                .isRead(false)
+                .priority("MEDIUM")
+                .icon("pi-id-card")
+                .color("#10b981")
+                .actionUrl("/profile/kyc")
+                .actionLabel("View Profile")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createKycExpiringNotification(Long borrowerId, int daysUntilExpiry) {
+        log.info("Creating KYC expiring notification for borrower: {}", borrowerId);
+
+        String urgency = daysUntilExpiry <= 7 ? "HIGH" : "MEDIUM";
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("KYC_EXPIRING")
+                .title("KYC Documents Expiring Soon")
+                .message(String.format("Your KYC documents will expire in %d days. Please renew them to continue using our services.",
+                        daysUntilExpiry))
+                .referenceType("BORROWER")
+                .referenceId(borrowerId)
+                .isRead(false)
+                .priority(urgency)
+                .icon("pi-exclamation-triangle")
+                .color("#f59e0b")
+                .actionUrl("/profile/kyc")
+                .actionLabel("Renew KYC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createOverdueNotification(Long loanId, String loanAccountNumber, int daysOverdue, Long borrowerId) {
+        log.info("Creating overdue notification for loan: {}", loanAccountNumber);
+
+        String severity = daysOverdue > 30 ? "HIGH" : (daysOverdue > 15 ? "MEDIUM" : "LOW");
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("LOAN_OVERDUE")
+                .title("Loan Payment Overdue")
+                .message(String.format("Your loan payment for #%s is %d days overdue. Please make a payment to avoid penalties.",
+                        loanAccountNumber, daysOverdue))
+                .referenceType("LOAN")
+                .referenceId(loanId)
+                .referenceNumber(loanAccountNumber)
+                .isRead(false)
+                .priority(severity)
+                .icon("pi-exclamation-triangle")
+                .color("#ef4444")
+                .actionUrl("/loans/" + loanId)
+                .actionLabel("Make Payment")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createPaymentReminderNotification(Long loanId, String loanAccountNumber, LocalDate dueDate, BigDecimal amount, Long borrowerId) {
+        log.info("Creating payment reminder notification for loan: {}", loanAccountNumber);
+
+        long daysUntilDue = LocalDate.now().until(dueDate).getDays();
+        String urgency = daysUntilDue <= 3 ? "HIGH" : "MEDIUM";
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(borrowerId)
+                .type("PAYMENT_REMINDER")
+                .title("Upcoming Payment Due")
+                .message(String.format("Your payment of %s for loan #%s is due on %s. %d days remaining.",
+                        formatCurrency(amount), loanAccountNumber, dueDate, daysUntilDue))
+                .referenceType("LOAN")
+                .referenceId(loanId)
+                .referenceNumber(loanAccountNumber)
+                .isRead(false)
+                .priority(urgency)
+                .icon("pi-bell")
+                .color("#f59e0b")
+                .actionUrl("/loans/" + loanId)
+                .actionLabel("Make Payment")
+                .expiresAt(dueDate.atStartOfDay())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    @Override
+    public void createGroupActivityNotification(Long groupId, String groupName, String activityType, Long memberId) {
+        log.info("Creating group activity notification for group: {}", groupName);
+
+        String title, message, icon, color;
+
+        switch (activityType) {
+            case "MEMBER_ADDED":
+                title = "New Group Member";
+                message = String.format("A new member has joined your group '%s'.", groupName);
+                icon = "pi-user-plus";
+                color = "#10b981";
+                break;
+            case "LOAN_APPROVED":
+                title = "Group Loan Approved";
+                message = String.format("Your group '%s' loan has been approved!", groupName);
+                icon = "pi-check-circle";
+                color = "#10b981";
+                break;
+            case "MEETING_SCHEDULED":
+                title = "Group Meeting Scheduled";
+                message = String.format("A meeting has been scheduled for your group '%s'.", groupName);
+                icon = "pi-calendar";
+                color = "#3b82f6";
+                break;
+            default:
+                title = "Group Activity";
+                message = String.format("New activity in your group '%s': %s", groupName, activityType);
+                icon = "pi-users";
+                color = "#8b5cf6";
+        }
+
+        InAppNotification notification = InAppNotification.builder()
+                .userId(memberId)
+                .type("GROUP_" + activityType)
+                .title(title)
+                .message(message)
+                .referenceType("GROUP")
+                .referenceId(groupId)
+                .referenceNumber(groupName)
+                .isRead(false)
+                .priority("MEDIUM")
+                .icon(icon)
+                .color(color)
+                .actionUrl("/groups/" + groupId)
+                .actionLabel("View Group")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    // Helper method for currency formatting
+    private String formatCurrency(BigDecimal amount) {
+        return String.format("KES %,.2f", amount);
     }
 
 

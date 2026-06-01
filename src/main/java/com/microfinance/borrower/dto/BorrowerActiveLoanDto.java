@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class BorrowerActiveLoanDto {
     private Long id;
     private String loanAccountNumber;
+    private Long loanApplicationId;
     private BigDecimal principalAmount;
     private BigDecimal outstandingBalance;
     private BigDecimal monthlyPayment;

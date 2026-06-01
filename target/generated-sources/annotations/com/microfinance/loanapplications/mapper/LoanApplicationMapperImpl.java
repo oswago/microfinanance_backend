@@ -36,6 +36,8 @@ public class LoanApplicationMapperImpl implements LoanApplicationMapper {
         loanApplicationDto.setAppliedAmount( application.getAppliedAmount() );
         loanApplicationDto.setTenureMonths( application.getTenureMonths() );
         loanApplicationDto.setPurpose( application.getPurpose() );
+        loanApplicationDto.setBranchId(application.getBranch().getId());
+        loanApplicationDto.setPurposeCategory(application.getPurposeCategory());
         loanApplicationDto.setSubmittedDate( application.getSubmittedDate() );
         loanApplicationDto.setApprovedDate( application.getApprovedDate() );
         loanApplicationDto.setRejectedDate( application.getRejectedDate() );

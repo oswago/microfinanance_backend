@@ -553,6 +553,98 @@ public class AuditServiceImpl implements AuditService {
     }
 
 
+
+    @Async
+    @Override
+    public void logLoginAction(Long userId, String username, String ipAddress, String userAgent, boolean success, String failureReason) {
+        try {
+            log.info("Audit Log - Login action for user {}: {}", username, success ? "SUCCESS" : "FAILURE");
+
+            AuditLog auditLog = AuditLog.builder()
+                    .action("LOGIN")
+                    .userId(userId)
+                    .username(username)
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .status(success ? "SUCCESS" : "FAILURE")
+                    .severity(success ? "INFO" : "WARNING")
+                    .details(success ? "User logged in successfully" : "Login failed: " + failureReason)
+                    .timestamp(LocalDateTime.now())
+                    .entityType("USER")
+                    .entityId(userId)
+                    .build();
+
+            auditLogRepository.save(auditLog);
+
+        } catch (Exception e) {
+            log.error("Failed to log login action: {}", e.getMessage(), e);
+        }
+    }
+
+    @Async
+    @Override
+    public void logLogoutAction(Long userId, String username, String ipAddress, String sessionId) {
+        try {
+            log.info("Audit Log - Logout action for user: {}", username);
+
+            AuditLog auditLog = AuditLog.builder()
+                    .action("LOGOUT")
+                    .userId(userId)
+                    .username(username)
+                    .ipAddress(ipAddress)
+                    .sessionId(sessionId)
+                    .status("SUCCESS")
+                    .severity("INFO")
+                    .details("User logged out successfully")
+                    .timestamp(LocalDateTime.now())
+                    .entityType("USER")
+                    .entityId(userId)
+                    .build();
+
+            auditLogRepository.save(auditLog);
+
+        } catch (Exception e) {
+            log.error("Failed to log logout action: {}", e.getMessage(), e);
+        }
+    }
+
+    @Async
+    @Override
+    public void logLoginAttempt(String username, String ipAddress, String userAgent, boolean success, String failureReason) {
+        try {
+            // For failed login attempts where user might not exist
+            Long userId = null;
+            try {
+                // Try to find user by username
+                User user = userRepository.findByUsername(username).orElse(null);
+                if (user != null) {
+                    userId = user.getId();
+                }
+            } catch (Exception e) {
+                // User not found, continue with null userId
+            }
+
+            AuditLog auditLog = AuditLog.builder()
+                    .action("LOGIN_ATTEMPT")
+                    .userId(userId)
+                    .username(username)
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .status(success ? "SUCCESS" : "FAILURE")
+                    .severity(success ? "INFO" : "WARNING")
+                    .details(success ? "Login successful" : "Login failed: " + failureReason)
+                    .timestamp(LocalDateTime.now())
+                    .entityType("USER_AUTH")
+                    .build();
+
+            auditLogRepository.save(auditLog);
+
+        } catch (Exception e) {
+            log.error("Failed to log login attempt: {}", e.getMessage(), e);
+        }
+    }
+
+
     //Genaral Log Method that logs to acivity logs, borrower activity logs and audit Logs
     @Async
     @Override

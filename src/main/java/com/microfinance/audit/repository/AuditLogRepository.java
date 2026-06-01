@@ -91,6 +91,31 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                                         Pageable pageable);
 
 
+@Query("SELECT a.userId, a.username, " +
+        "CASE " +
+        "  WHEN u.firstName IS NOT NULL AND u.lastName IS NOT NULL THEN CONCAT(u.firstName, ' ', u.lastName) " +
+        "  WHEN u.firstName IS NOT NULL THEN u.firstName " +
+        "  WHEN u.lastName IS NOT NULL THEN u.lastName " +
+        "  ELSE u.username " +
+        "END, " +
+        "u.email, " +
+        "CAST(u.role AS string), " +
+        "COUNT(a), " +
+        "MAX(a.timestamp), " +
+        "MIN(a.timestamp), " +
+        "MAX(a.action), " +
+        "MAX(a.ipAddress), " +
+        "COUNT(DISTINCT a.sessionId) " +
+        "FROM AuditLog a " +
+        "LEFT JOIN User u ON a.userId = u.id " +
+        "WHERE a.timestamp BETWEEN :startDate AND :endDate " +
+        "GROUP BY a.userId, a.username, u.firstName, u.lastName, u.username, u.email, u.role " +
+        "ORDER BY COUNT(a) DESC")
+List<Object[]> getUserActivityStatsWithUserDetails(@Param("startDate") LocalDateTime startDate,
+                                                   @Param("endDate") LocalDateTime endDate,
+                                                   Pageable pageable);
+
+
     /**
      * Get user activity statistics without pagination (all users)
      *
@@ -141,11 +166,19 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
            "AND a.timestamp >= :since " +
            "ORDER BY a.timestamp DESC")
     List<AuditLog> findRecentDataChanges(@Param("since") LocalDateTime since, Pageable pageable);
-    
+  /*
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE a.action IN ('CREATE', 'UPDATE', 'DELETE') " +
            "AND a.timestamp BETWEEN :startDate AND :endDate")
     Integer countDataChangesInPeriod(@Param("startDate") LocalDateTime startDate,
                                   @Param("endDate") LocalDateTime endDate);
+*/
+    @Query("SELECT COUNT(a) FROM AuditLog a WHERE " +
+            "(UPPER(a.action) LIKE UPPER('%CREATE%') OR " +
+            "UPPER(a.action) LIKE UPPER('%UPDATE%') OR " +
+            "UPPER(a.action) LIKE UPPER('%DELETE%')) " +
+            "AND a.timestamp BETWEEN :startDate AND :endDate")
+    Integer countDataChangesInPeriod(@Param("startDate") LocalDateTime startDate,
+                                     @Param("endDate") LocalDateTime endDate);
     
     // Filtered queries
     @Query("SELECT a FROM AuditLog a WHERE " +
@@ -232,6 +265,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      *
      * @return List of DataChangeDto
      */
+    /*
     @Query("SELECT NEW com.microfinance.reports.dto.DataChangeDto(" +
             "a.id, " +
             "a.entityType, " +
@@ -246,6 +280,44 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             "a.details) " +
             "FROM AuditLog a " +
             "WHERE a.action IN ('CREATE', 'UPDATE', 'DELETE') " +
+            "AND a.timestamp >= :since " +
+            "ORDER BY a.timestamp DESC")
+    List<DataChangeDto> getRecentDataChanges(@Param("since") LocalDateTime since);
+
+*/
+
+    @Query("SELECT NEW com.microfinance.reports.dto.DataChangeDto(" +
+            "a.id, " +
+            "a.entityType, " +
+            "a.entityId, " +
+            "CASE " +
+            "  WHEN a.action LIKE '%CREATE%' THEN 'CREATE' " +
+            "  WHEN a.action LIKE '%UPDATE%' OR a.action LIKE '%UPDATED%' THEN 'UPDATE' " +
+            "  WHEN a.action LIKE '%DELETE%' OR a.action LIKE '%DELETED%' THEN 'DELETE' " +
+            "  WHEN a.action LIKE '%APPROVE%' THEN 'APPROVE' " +
+            "  ELSE 'UPDATE' " +
+            "END, " +
+            "CASE " +
+            "  WHEN a.details LIKE '%kycStatus%' THEN 'kycStatus' " +
+            "  WHEN a.details LIKE '%status%' THEN 'status' " +
+            "  WHEN a.details LIKE '%password%' THEN 'password' " +
+            "  ELSE NULL " +
+            "END, " + // fieldName extracted from details
+            "a.oldValue, " +
+            "a.newValue, " +
+            "a.username, " +
+            "a.userId, " +
+            "a.timestamp, " +
+            "a.details) " +
+            "FROM AuditLog a " +
+            "WHERE (a.action LIKE '%CREATE%' OR " +
+            "       a.action LIKE '%UPDATE%' OR " +
+            "       a.action LIKE '%UPDATED%' OR " +
+            "       a.action LIKE '%DELETE%' OR " +
+            "       a.action LIKE '%DELETED%' OR " +
+            "       a.details LIKE '%created%' OR " +
+            "       a.details LIKE '%updated%' OR " +
+            "       a.details LIKE '%deleted%') " +
             "AND a.timestamp >= :since " +
             "ORDER BY a.timestamp DESC")
     List<DataChangeDto> getRecentDataChanges(@Param("since") LocalDateTime since);

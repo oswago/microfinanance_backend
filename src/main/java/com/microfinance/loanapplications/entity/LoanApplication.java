@@ -59,11 +59,11 @@ public class LoanApplication extends BaseEntity {
     private String purpose;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 50)
     private GeneralConfig.LoanApplicationStatus status = GeneralConfig.LoanApplicationStatus.DRAFT;
     
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(length = 50)
     private GeneralConfig.ApplicationStage stage = GeneralConfig.ApplicationStage.APPLICATION;
     
     @Column(columnDefinition = "TEXT")
@@ -154,10 +154,14 @@ public class LoanApplication extends BaseEntity {
     public boolean canBeSubmitted() {
         return status == GeneralConfig.LoanApplicationStatus.DRAFT;
     }
-    
+
     public boolean canBeApproved() {
-        return status == GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL;
+        return status == GeneralConfig.LoanApplicationStatus.SUBMITTED ||
+                status == GeneralConfig.LoanApplicationStatus.UNDER_REVIEW ||
+                status == GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL ||
+                status == GeneralConfig.LoanApplicationStatus.PENDING_FINAL_APPROVAL;  // Add this line
     }
+
     
     public boolean canBeDisbursed() {
         return status == GeneralConfig.LoanApplicationStatus.APPROVED && loan != null

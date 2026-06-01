@@ -89,6 +89,7 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     // Cache for frequently accessed data
     private final Map<Long, ApprovalWorkflowDto> workflowCache = new ConcurrentHashMap<>();
     private final Map<String, ApprovalStatsDto> statsCache = new ConcurrentHashMap<>();
+    private final ApprovalWorkflowRulesService workflowRules;
 
     // Constants
     private static final int APPROVAL_SLA_HOURS = 24;
@@ -102,7 +103,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         log.info("Approving application {} by user {}", applicationId, approver.getUsername());
 
         long startTime = System.currentTimeMillis();
-
         try {
             // ===== STEP 1: Validate application exists =====
             log.debug("STEP 1: Fetching application from database...");
@@ -146,7 +146,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                         getMaxApprovalAmountForRole(approver.getRole())));
             }
 
-
             // ===== STEP 4: Create approval record =====
             log.debug("STEP 4: Creating approval record...");
             ApplicationApproval approval = createApprovalRecord(application, approver, dto,
@@ -156,22 +155,10 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
 
             // ===== STEP 5: Update application after approval =====
             log.debug("STEP 5: Updating application after approval...");
-            updateApplicationAfterApproval(application, approver, dto);
-            log.debug("✓ Application updated");
-
-            // ===== STEP 6: Handle final vs intermediate approval =====
-            log.debug("STEP 6: Checking if this is final approval...");
             boolean finalApproval = isFinalApproval(application, approver);
             log.debug("Is final approval: {}", finalApproval);
-
-            if (finalApproval) {
-                log.debug("Processing FINAL approval...");
-                handleFinalApproval(application, approver, dto);
-            } else {
-                log.debug("Processing INTERMEDIATE approval...");
-                handleIntermediateApproval(application, approver);
-            }
-            log.debug("✓ Approval handling complete");
+            updateApplicationAfterApproval(application, approver, dto);
+            log.debug("✓ Application updated and ✓ Approval handling complete");
 
             // ===== STEP 7: Save application =====
             log.debug("STEP 7: Saving application...");
@@ -223,7 +210,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                         auditMessage.toString()
                 );
             }
-
             //End Audit Section
 
             log.debug("✓ Audit log created");
@@ -232,14 +218,7 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
             return result;
 
         } catch (StackOverflowError e) {
-            log.error("❌❌❌ STACKOVERFLOW ERROR DETECTED! ❌❌❌");
-            log.error("This is caused by a circular reference in entity/DTO relationships.");
-            log.error("");
-            log.error("=== DIAGNOSIS ===");
-            log.error("The most common cause: Bidirectional @OneToMany/@ManyToOne without @JsonIgnore");
-            log.error("");
             throw new BusinessException("StackOverflowError due to circular reference: " + e.getMessage());
-
         } catch (Exception e) {
             log.error("❌ FAILED to approve application {}: {}", applicationId, e.getMessage());
             log.error("Exception type: {}", e.getClass().getName());
@@ -252,102 +231,38 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     /**
      * Get total number of approval levels required for this application
      */
+
     private int getTotalApprovalLevels(LoanApplication application) {
-        BigDecimal amount = application.getAppliedAmount();
-        Integer riskScore = application.getRiskScore();
-
-        // Base levels on amount
-        int levels = 1;
-
-        if (amount.compareTo(new BigDecimal("50000")) > 0) {
-            levels = 2; // Needs LOAN_OFFICER + CREDIT_OFFICER
-        }
-        if (amount.compareTo(new BigDecimal("500000")) > 0) {
-            levels = 3; // Needs LOAN_OFFICER + CREDIT_OFFICER + BRANCH_MANAGER
-        }
-        if (amount.compareTo(new BigDecimal("1000000")) > 0) {
-            levels = 4; // Needs LOAN_OFFICER + CREDIT_OFFICER + BRANCH_MANAGER + REGIONAL_MANAGER
-        }
-
-        // Adjust for risk score
-        if (riskScore != null && riskScore > 70) {
-            levels = Math.min(levels + 1, 5); // Add one more level for high risk
-        }
-
-        // Check product type
-        if (application.getLoanProduct() != null && application.getLoanProduct().getProductType() != null) {
-            String productTypeName = application.getLoanProduct().getProductType().getName();
-            if ("BUSINESS".equals(productTypeName) && amount.compareTo(new BigDecimal("500000")) > 0) {
-                levels = Math.max(levels, 3);
-            }
-        }
-
-        log.debug("Total approval levels for amount {}: {}", amount, levels);
-        return levels;
+        return workflowRules.getTotalApprovalLevels(application);
     }
 
     /**
      * Check if user can approve based on amount limits
      */
-    private boolean canUserApproveAtAmountLevel(LoanApplication application, User approver) {
-        BigDecimal amount = application.getAppliedAmount();
-        BigDecimal maxAmount = getMaxApprovalAmountForRole(approver.getRole());
 
-        if (maxAmount != null && amount.compareTo(maxAmount) > 0) {
-            // Check if there's an override
-            return false;
-        }
-        return true;
+
+    private boolean canUserApproveAtAmountLevel(LoanApplication application, User approver) {
+        return workflowRules.canUserApproveAtAmountLevel(application.getAppliedAmount(), approver.getRole());
     }
 
     /**
      * Get maximum approval amount for a user role
      */
+
     private BigDecimal getMaxApprovalAmountForRole(User.UserRole role) {
-        switch (role) {
-            case LOAN_OFFICER:
-                return new BigDecimal("50000");
-            case CREDIT_OFFICER:
-                return new BigDecimal("250000");
-            case BRANCH_MANAGER:
-                return new BigDecimal("1000000");
-            case REGIONAL_MANAGER:
-                return new BigDecimal("5000000");
-            case SUPER_ADMIN:
-                return null; // No limit
-            default:
-                return new BigDecimal("0");
-        }
+        return workflowRules.getMaxApprovalAmountForRole(role);
     }
 
     /**
      * Get the role required for the next approval level
      */
-    private String getNextApprovalRole(LoanApplication application, int currentLevel) {
-        int nextLevel = currentLevel + 1;
-        BigDecimal amount = application.getAppliedAmount();
 
-        switch (nextLevel) {
-            case 2:
-                if (amount.compareTo(new BigDecimal("500000")) > 0) {
-                    return "BRANCH_MANAGER";
-                }
-                return "CREDIT_OFFICER";
-            case 3:
-                return "BRANCH_MANAGER";
-            case 4:
-                return "REGIONAL_MANAGER";
-            case 5:
-                return "CREDIT_COMMITTEE";
-            default:
-                return "SUPER_ADMIN";
-        }
+    private String getNextApprovalRole(LoanApplication application, int currentLevel) {
+        return workflowRules.getNextApprovalRole(application, currentLevel);
     }
 
 
-
-
-    private String getCurrentStep(Exception e) {
+        private String getCurrentStep(Exception e) {
         StackTraceElement[] stackTrace = e.getStackTrace();
         for (StackTraceElement element : stackTrace) {
             if (element.getMethodName().contains("approveApplication") ||
@@ -545,23 +460,15 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 .collect(Collectors.toList());
     }
 
+
+
     private boolean isLargeAmount(LoanApplication application) {
-        return application.getAppliedAmount() != null &&
-                application.getAppliedAmount().compareTo(BigDecimal.valueOf(500000)) >= 0;
+        return workflowRules.isLargeAmount(application);
     }
 
-    private boolean isOverdue(LoanApplication application) {
-        if (application.getSubmittedDate() == null) {
-            return false;
-        }
-
-        long daysSinceSubmission = ChronoUnit.DAYS.between(
-                application.getSubmittedDate().toLocalDate(),
-                LocalDate.now()
-        );
-
-        return daysSinceSubmission >= 3;
-    }
+private boolean isOverdue(LoanApplication application) {
+    return workflowRules.isOverdue(application);
+}
 
     @Transactional(readOnly = true)
     @Override
@@ -711,14 +618,7 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
      * Calculate days since submission for an application
      */
     private Long calculateDaysSinceSubmission(LoanApplication application) {
-        if (application.getSubmittedDate() == null) {
-            return 0L;
-        }
-
-        return ChronoUnit.DAYS.between(
-                application.getSubmittedDate().toLocalDate(),
-                LocalDate.now()
-        );
+        return workflowRules.calculateDaysSinceSubmission(application);
     }
 
     /**
@@ -727,22 +627,11 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
      * 1 = Medium priority (overdue, submitted 3+ days ago)
      * 2 = Low priority (others)
      */
+
     private int calculatePriorityScore(LoanApplication application) {
-        // Priority 0: Large amounts (≥ 500,000)
-        if (application.getAppliedAmount() != null &&
-                application.getAppliedAmount().compareTo(BigDecimal.valueOf(500000)) >= 0) {
-            return 0;
-        }
-
-        // Priority 1: Overdue applications (submitted 3+ days ago)
-        Long daysSinceSubmission = calculateDaysSinceSubmission(application);
-        if (daysSinceSubmission != null && daysSinceSubmission >= 3) {
-            return 1;
-        }
-
-        // Priority 2: Others
-        return 2;
+        return workflowRules.calculatePriorityScore(application);
     }
+
 
     /**
      * Helper class to store application with priority information
@@ -1149,13 +1038,23 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
 
     private ApplicationApproval createApprovalRecord(LoanApplication application, User approver,
                                                      ApprovalDecisionDto dto, GeneralConfig.ApprovalDecision decision) {
+
+        String approvalRoleName=approver.getRole().name();
+        // Determine what role this approval represents (not who approved it)
+        int level = determineApprovalLevel(application, approver);
+        BigDecimal amount = application.getAppliedAmount();
+        // Always use the expected role for this level, not the approver's actual role
+        String expectedRoleForLevel = workflowRules.getRoleForLevel(level, amount);
+        log.info("Creating approval record - Level: {}, Expected Role: {}, Actual Approver: {} ({})",
+                level, expectedRoleForLevel, approver.getUsername(), approver.getRole());
+
         return ApplicationApproval.builder()
                 .loanApplication(application)
                 .approver(approver)
                 .decision(decision)
                 .comments(dto.getComments())
                 .approvalLevel(determineApprovalLevel(application, approver))
-                .approvalRole(approver.getRole().name())
+                .approvalRole(expectedRoleForLevel)  // Use expected role, not approver's role
                 .decisionDate(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())
                 .overrideLimits(String.valueOf(dto.getOverrideLimits()))
@@ -1163,34 +1062,33 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 .build();
     }
 
+
     private int determineApprovalLevel(LoanApplication application, User approver) {
-        // Check existing approvals
-        System.out.println(">>>>>Am here at Approvals1");
         List<ApplicationApproval> existingApprovals = approvalRepository
                 .findByLoanApplicationIdOrderByApprovalLevelAsc(application.getId());
-
-        System.out.println(">>>>>Am here at Approvals 2");
-
         if (existingApprovals.isEmpty()) {
-            return 1; // First approval
+            log.info("No existing approvals for application {}, starting at level 1", application.getId());
+            return 1;
         }
-        System.out.println(">>>>>Am here at Approvals 3");
-        // Find max approval level
-        int maxLevel = existingApprovals.stream()
+        // Find the highest level that has been APPROVED
+        int maxApprovedLevel = existingApprovals.stream()
+                .filter(a -> a.getDecision() == GeneralConfig.ApprovalDecision.APPROVED)
                 .mapToInt(ApplicationApproval::getApprovalLevel)
                 .max()
                 .orElse(0);
-
-        System.out.println(">>>>>Am here at Approvals 4");
-
-        // Check if we need escalation
-        if (shouldEscalateApproval(application, approver, maxLevel)) {
-            return maxLevel + 1;
+        // The next level to approve is one more than the highest approved level
+        int nextLevel = maxApprovedLevel + 1;
+        log.info("Application {} - Max approved level: {}, Next level: {}",
+                application.getId(), maxApprovedLevel, nextLevel);
+        // Optional: Check for escalation (if needed)
+        if (shouldEscalateApproval(application, approver, maxApprovedLevel)) {
+            log.info("Escalation triggered for application {}, using level: {}",
+                    application.getId(), nextLevel);
         }
-        System.out.println(">>>>>Am here at Approvals....");
 
-        return maxLevel;
+        return nextLevel;
     }
+
 
 
     private boolean shouldEscalateApproval(LoanApplication application, User approver, int currentLevel) {
@@ -1230,19 +1128,40 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         return false;
     }
 
-    private void updateApplicationAfterApproval(LoanApplication application, User approver, ApprovalDecisionDto dto) {
-        // Update approval level
-        int newApprovalLevel = determineApprovalLevel(application, approver);
-        application.setCurrentApprovalLevel(String.valueOf(newApprovalLevel));
 
-        // Update stage if needed
-        if (newApprovalLevel > 1) {
+    private void updateApplicationAfterApproval(LoanApplication application, User approver, ApprovalDecisionDto dto) {
+        int currentLevel = determineApprovalLevel(application, approver);
+        int totalLevels = getTotalApprovalLevels(application);
+
+        // This is the level that was just approved
+        int approvedLevel = currentLevel - 1;
+        int nextLevel = currentLevel;  // The level just approved is now complete
+
+        application.setCurrentApprovalLevel(String.valueOf(nextLevel));
+        application.setLastApprovalDate(LocalDateTime.now());
+
+        // Determine if this is the final approval
+        boolean isFinal = nextLevel >= totalLevels;
+
+        if (isFinal) {
+            application.setStatus(GeneralConfig.LoanApplicationStatus.APPROVED);
+            application.setStage(GeneralConfig.ApplicationStage.DISBURSEMENT);
+            application.setNextApprovalRole("COMPLETED");
+        } else {
+            if (nextLevel >= totalLevels - 1) {
+                application.setStatus(GeneralConfig.LoanApplicationStatus.PENDING_FINAL_APPROVAL);
+            } else {
+                application.setStatus(GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL);
+            }
             application.setStage(GeneralConfig.ApplicationStage.APPROVAL);
+            application.setNextApprovalRole(getNextApprovalRole(application, approvedLevel));
         }
 
-        // Update SLA tracking
-        application.setLastApprovalDate(LocalDateTime.now());
+        log.info("Application {} - Approved level {}/{}, next role: {}",
+                application.getId(), nextLevel, totalLevels, application.getNextApprovalRole());
     }
+
+
 
     private void handleFinalApproval(LoanApplication application, User approver, ApprovalDecisionDto dto) {
         // Update application status
@@ -1261,25 +1180,15 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     }
 
     private void handleIntermediateApproval(LoanApplication application, User approver) {
-        application.setStatus(GeneralConfig.LoanApplicationStatus.UNDER_REVIEW);
-
-        // Check if escalation is needed
-        if (shouldEscalateApproval(application, approver, Integer.parseInt(application.getCurrentApprovalLevel()))) {
-            escalateToNextLevel(application, approver);
-        }
-    }
-
-    private void handleIntermediateApproval(LoanApplication application, User approver,
-                                            int currentLevel, int nextLevel) {
+        int currentLevel = Integer.parseInt(application.getCurrentApprovalLevel());
+        int nextLevel = currentLevel + 1;
         int totalLevels = getTotalApprovalLevels(application);
-
         // Update status based on next level
-        if (nextLevel == totalLevels) {
+        if (nextLevel >= totalLevels) {
             application.setStatus(GeneralConfig.LoanApplicationStatus.PENDING_FINAL_APPROVAL);
         } else {
             application.setStatus(GeneralConfig.LoanApplicationStatus.PENDING_APPROVAL);
         }
-
         application.setStage(GeneralConfig.ApplicationStage.APPROVAL);
         application.setCurrentApprovalLevel(String.valueOf(nextLevel));
         application.setNextApprovalRole(getNextApprovalRole(application, currentLevel));
@@ -1288,12 +1197,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         log.info("Application moved to approval level {}/{}, next role: {}",
                 nextLevel, totalLevels, application.getNextApprovalRole());
     }
-
-
-
-
-
-
 
 
     private void handleRejectionWorkflow(LoanApplication application, ApprovalDecisionDto dto) {
@@ -1344,28 +1247,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         return loanRepository.save(loan);
     }
 
-
-    private Loan createLoanFromApplicationORG(LoanApplication application, User approver) {
-        Loan loan = Loan.builder()
-                .loanApplication(application)
-                .borrower(application.getBorrower())
-                .loanAccountNumber(generateLoanAccountNumber())
-                .principalAmount(application.getAppliedAmount())
-                .interestRate(application.getLoanProduct().getInterestRate())
-                .tenureMonths(application.getTenureMonths())
-                .status(GeneralConfig.LoanStatus.PENDING_DISBURSEMENT)
-                .createdAt(LocalDateTime.now())
-                .build();
-        loan.setCreatedBy(approver.getId());
-        loan.calculateLoanTotals();
-        loan.setTotalPaid(BigDecimal.valueOf(0.0));
-
-        // Generate repayment schedule
-        List<RepaymentSchedule> schedules = generateRepaymentSchedule(loan);
-        loan.setRepaymentSchedules(schedules);
-
-        return loanRepository.save(loan);
-    }
 
     private String generateLoanAccountNumber() {
         String timestamp = String.valueOf(System.currentTimeMillis());
@@ -1446,8 +1327,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         }
 
         // 6. Check if already approved by this user
-
-
         if (hasAlreadyApproved(application, user) && !isSuperAdmin) {
             return false;
         }
@@ -1471,20 +1350,10 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
 
     private boolean hasAmountAuthority(LoanApplication application, User user) {
         BigDecimal amount = application.getAppliedAmount();
-
-        switch (user.getRole()) {
-            case BRANCH_MANAGER:
-                return amount.compareTo(new BigDecimal("1000000")) <= 0;
-            case CREDIT_APPROVER:
-                return amount.compareTo(new BigDecimal("5000000")) <= 0;
-            case REGIONAL_MANAGER:
-                return amount.compareTo(new BigDecimal("10000000")) <= 0;
-            case SUPER_ADMIN:
-                return true;
-            default:
-                return false;
-        }
+     return workflowRules.hasAmountAuthority(application, user);
     }
+
+
 
     private boolean isCorrectApprovalLevel(LoanApplication application, User user) {
         int neededLevel = determineCurrentApprovalLevel(application);
@@ -1517,12 +1386,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 .mapToInt(ApplicationApproval::getApprovalLevel)
                 .max()
                 .orElse(0);
-
-        // Check if we need credit committee for large amounts
-        if (maxCompletedLevel == 2 &&
-                application.getAppliedAmount().compareTo(new BigDecimal("500000")) > 0) {
-            return 3;
-        }
 
         return maxCompletedLevel + 1;
     }
@@ -1570,94 +1433,13 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 .build();
     }
 
+
     private List<ApprovalWorkflowStepDto> buildWorkflowSteps(LoanApplication application,
                                                              List<ApplicationApproval> approvals,
                                                              List<ApprovalCondition> conditions) {
-        List<ApprovalWorkflowStepDto> steps = new ArrayList<>();
-
-        // Step 1: Document Verification
-        steps.add(buildWorkflowStep(1, "DOCUMENT_VERIFICATION", "Document Verification",
-                "LOAN_OFFICER", application, approvals));
-
-        // Step 2: Credit Assessment
-        steps.add(buildWorkflowStep(2, "CREDIT_ASSESSMENT", "Credit Assessment",
-                "CREDIT_OFFICER", application, approvals));
-
-        // Step 3: Branch Manager Approval
-        steps.add(buildWorkflowStep(3, "BRANCH_MANAGER_APPROVAL", "Branch Manager Approval",
-                "BRANCH_MANAGER", application, approvals));
-
-        // Step 4: Risk Assessment (for large amounts)
-        if (application.getAppliedAmount().compareTo(new BigDecimal("500000")) > 0) {
-            steps.add(buildWorkflowStep(4, "RISK_ASSESSMENT", "Risk Assessment",
-                    "RISK_MANAGER", application, approvals));
-        }
-
-        // Step 5: Credit Committee (for very large amounts)
-        if (application.getAppliedAmount().compareTo(new BigDecimal("1000000")) > 0) {
-            steps.add(buildWorkflowStep(5, "CREDIT_COMMITTEE", "Credit Committee",
-                    "CREDIT_COMMITTEE", application, approvals));
-        }
-        // Add condition steps
-        steps.addAll(buildConditionSteps(conditions));
-        return steps;
+        return workflowRules.buildWorkflowSteps(application, approvals, conditions);
     }
 
-    private ApprovalWorkflowStepDto buildWorkflowStep(int stepNumber, String stepCode, String stepName,
-                                                      String role, LoanApplication application,
-                                                      List<ApplicationApproval> approvals) {
-        Optional<ApplicationApproval> stepApproval = approvals.stream()
-                .filter(a -> a.getApprovalLevel() == stepNumber)
-                .findFirst();
-
-        ApprovalWorkflowStepDto step = new ApprovalWorkflowStepDto();
-        step.setStepNumber(stepNumber);
-        step.setStepCode(stepCode);
-        step.setStepName(stepName);
-        step.setApprovalRole(role);
-
-        if (stepApproval.isPresent()) {
-            ApplicationApproval approval = stepApproval.get();
-            step.setStatus(approval.getDecision().name());
-            step.setDecision(approval.getDecision().name());
-            step.setApproverName(approval.getApprover().getFirstName() + " " +
-                    approval.getApprover().getLastName());
-            step.setApproverUsername(approval.getApprover().getUsername());
-            step.setDecisionDate(approval.getDecisionDate());
-            step.setComments(approval.getComments());
-            step.setIsCompleted(true);
-            step.setIsCurrentStep(false);
-        } else {
-            step.setStatus("PENDING");
-            step.setIsCompleted(false);
-            step.setIsCurrentStep(determineIfCurrentStep(stepNumber, approvals));
-        }
-
-        // Set SLA information
-        setSLAInfo(step, application);
-
-        return step;
-    }
-
-    private List<ApprovalWorkflowStepDto> buildConditionSteps(List<ApprovalCondition> conditions) {
-        List<ApprovalWorkflowStepDto> conditionSteps = new ArrayList<>();
-
-        for (ApprovalCondition condition : conditions) {
-            ApprovalWorkflowStepDto step = new ApprovalWorkflowStepDto();
-            step.setStepNumber(100 + condition.getId().intValue()); // Offset for condition steps
-            step.setStepCode("CONDITION_" + condition.getConditionType());
-            step.setStepName(condition.getConditionType());
-            step.setApprovalRole("SYSTEM");
-            step.setStatus(condition.getStatus().name());
-            step.setIsCompleted(condition.getStatus() == GeneralConfig.ConditionStatus.COMPLETED);
-            step.setIsCurrentStep(false);
-            step.setComments(condition.getDescription());
-
-            conditionSteps.add(step);
-        }
-
-        return conditionSteps;
-    }
 
     private boolean determineIfCurrentStep(int stepNumber, List<ApplicationApproval> approvals) {
         // Find highest completed step
@@ -1701,28 +1483,9 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 .orElse("Completed");
     }
 
+
     private String determineNextApprovalRole(LoanApplication application, List<ApplicationApproval> approvals) {
-        if (application.getStatus() != GeneralConfig.LoanApplicationStatus.SUBMITTED &&
-                application.getStatus() != GeneralConfig.LoanApplicationStatus.UNDER_REVIEW) {
-            return "COMPLETED";
-        }
-
-        int maxCompletedLevel = approvals.stream()
-                .filter(a -> a.getDecision() == GeneralConfig.ApprovalDecision.APPROVED)
-                .mapToInt(ApplicationApproval::getApprovalLevel)
-                .max()
-                .orElse(0);
-
-        switch (maxCompletedLevel) {
-            case 0: return "LOAN_OFFICER";
-            case 1: return "CREDIT_OFFICER";
-            case 2: return "BRANCH_MANAGER";
-            case 3: return application.getAppliedAmount().compareTo(new BigDecimal("500000")) > 0 ?
-                    "RISK_MANAGER" : "COMPLETED";
-            case 4: return application.getAppliedAmount().compareTo(new BigDecimal("1000000")) > 0 ?
-                    "CREDIT_COMMITTEE" : "COMPLETED";
-            default: return "COMPLETED";
-        }
+        return workflowRules.getNextApprovalRoleFromApprovals(application, approvals);
     }
 
     private ApprovalPerformanceDto calculatePerformanceMetrics(Long approverId,
@@ -2371,40 +2134,12 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         }
     }
 
+
+
     private SLAStatusDto calculateSLAStatus(LoanApplication application) {
-        LocalDateTime submissionDate = application.getSubmittedDate();
-        LocalDateTime now = LocalDateTime.now();
-
-        long totalSlaHours = APPROVAL_SLA_HOURS;
-        long hoursElapsed = ChronoUnit.HOURS.between(submissionDate, now);
-        long hoursRemaining = Math.max(0, totalSlaHours - hoursElapsed);
-        double completionPercentage = Math.min(100.0, (double) hoursElapsed / totalSlaHours * 100);
-
-        String slaStatus;
-        if (hoursRemaining <= 0) {
-            slaStatus = "BREACHED";
-        } else if (hoursRemaining <= 8) {
-            slaStatus = "AT_RISK";
-        } else {
-            slaStatus = "ON_TRACK";
-        }
-
-        LocalDateTime slaDueDate = submissionDate.plusHours(totalSlaHours);
-
-        return SLAStatusDto.builder()
-                .applicationId(application.getId())
-                .applicationNumber(application.getApplicationNumber())
-                .slaLevel("STANDARD")
-                .slaStartDate(submissionDate)
-                .slaDueDate(slaDueDate)
-                .hoursRemaining(hoursRemaining)
-                .hoursElapsed(hoursElapsed)
-                .status(slaStatus)
-                .completionPercentage(completionPercentage)
-                .nextAction("APPROVAL_DECISION")
-                .nextActionDue(slaDueDate)
-                .build();
+        return workflowRules.calculateSLAStatus(application);
     }
+
 
     private PendingApprovalDto convertToPendingApprovalDto(LoanApplication application) {
         return PendingApprovalDto.builder()
@@ -2705,9 +2440,7 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     private void checkForCircularReferences(Object obj, String context, Set<Object> visited) {
         if (obj == null || visited.contains(obj)) return;
         visited.add(obj);
-
         log.debug("Checking {} - {}", context, obj.getClass().getSimpleName());
-
         // Check all fields using reflection
         for (java.lang.reflect.Field field : obj.getClass().getDeclaredFields()) {
             field.setAccessible(true);
@@ -2752,11 +2485,9 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
 
 
 
-
     private void clearCaches(Long applicationId) {
         // Clear workflow cache
         workflowCache.remove(applicationId);
-
         // Clear stats cache for all users
         statsCache.clear();
     }
@@ -2768,59 +2499,17 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                 period != null ? period : "default",
                 LocalDate.now().toString());
     }
-/*
-    private boolean isFinalApproval(LoanApplication application, User approver) {
-        BigDecimal amount = application.getAppliedAmount();
-
-        // Check based on amount and user role
-        switch (approver.getRole()) {
-            case SUPER_ADMIN:
-                return true; // Super admin can always give final approval
-            case REGIONAL_MANAGER:
-                return amount.compareTo(new BigDecimal("10000000")) <= 0;
-            case CREDIT_APPROVER:
-                return amount.compareTo(new BigDecimal("5000000")) <= 0;
-            case BRANCH_MANAGER:
-                return amount.compareTo(new BigDecimal("1000000")) <= 0;
-            default:
-                return false;
-        }
-    }
-    */
 
 
     private boolean isFinalApproval(LoanApplication application, User approver) {
         int currentLevel = determineApprovalLevel(application, approver);
-        int totalLevels = getTotalApprovalLevels(application);
-
-        // Check if this is the last required approval level
-        if (currentLevel >= totalLevels) {
-            return true;
-        }
-
-        // Also check if user is SUPER_ADMIN
-        if (approver.getRole() == User.UserRole.SUPER_ADMIN) {
-            return true;
-        }
-
-        // Check amount-based final approval
-        BigDecimal amount = application.getAppliedAmount();
-        switch (approver.getRole()) {
-            case REGIONAL_MANAGER:
-                return amount.compareTo(new BigDecimal("10000000")) <= 0 && currentLevel >= 4;
-            case BRANCH_MANAGER:
-                return amount.compareTo(new BigDecimal("1000000")) <= 0 && currentLevel >= 3;
-            case CREDIT_APPROVER:
-                return amount.compareTo(new BigDecimal("5000000")) <= 0 && currentLevel >= 2;
-            default:
-                return false;
-        }
+        return workflowRules.isFinalApproval(application, currentLevel, approver);
     }
+
 
     private void escalateToNextLevel(LoanApplication application, User approver) {
         // Implementation for escalating to next approval level
         log.info("Escalating application {} to next approval level", application.getId());
-
         // Send escalation notifications
         sendEscalationNotifications(application, approver);
     }
@@ -2859,7 +2548,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                             currentLevel, totalLevels, dto.getComments()),
                     approver.getUsername()
             );
-
             // If not final approval, notify next approver
             if (!isFinalApproval) {
                 String nextRole = getNextApprovalRole(application, currentLevel);
@@ -2897,35 +2585,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                         application.getApplicationNumber(),
                         "APPROVED",
                         "Congratulations! Your loan application has been fully approved."
-                );
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to send approval notifications: {}", e.getMessage());
-        }
-    }
-
-    @Async
-    private void sendApprovalNotifications(LoanApplication application, User approver, ApprovalDecisionDto dto) {
-        try {
-            // Send to loan officer
-            if (application.getCreatedBy() != null) {
-                notificationService.sendApprovalNotification(
-                        application.getCreatedBy(),
-                        application.getApplicationNumber(),
-                        "APPROVED",
-                        dto.getComments(),
-                        approver.getUsername()
-                );
-            }
-
-            // Send to borrower
-            if (application.getBorrower() != null && application.getBorrower().getEmail() != null) {
-                notificationService.sendBorrowerNotification(
-                        application.getBorrower().getEmail(),
-                        application.getApplicationNumber(),
-                        "APPROVED",
-                        dto.getComments()
                 );
             }
 
@@ -2981,10 +2640,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
             log.error("Failed to send return notifications: {}", e.getMessage());
         }
     }
-
-
-
-
 
     // ========== COMMENTS IMPLEMENTATION ==========
 
@@ -3252,19 +2907,11 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
      * @param priorityScore The priority score (0 = highest priority, higher numbers = lower priority)
      * @return Priority level label
      */
+
     private String getPriorityLevel(int priorityScore) {
-        if (priorityScore == 0) {
-            return "CRITICAL";
-        } else if (priorityScore == 1) {
-            return "HIGH";
-        } else if (priorityScore == 2) {
-            return "MEDIUM";
-        } else if (priorityScore == 3) {
-            return "LOW";
-        } else {
-            return "VERY_LOW";
-        }
+        return workflowRules.getPriorityLevel(priorityScore);
     }
+
 
 
     private String formatDuration(int minutes) {
@@ -3276,9 +2923,7 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     }
 
     private String getPriorityReason(LoanApplication application, int priorityScore) {
-        if (priorityScore == 0) return "Large amount (≥ 500,000)";
-        if (priorityScore == 1) return "Overdue (submitted 3+ days ago)";
-        return "Standard priority";
+        return workflowRules.getPriorityReason(application, priorityScore);
     }
 
 // ========== DELEGATION IMPLEMENTATION ==========
@@ -3493,7 +3138,6 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
     }
 
 // ========== ESCALATION IMPLEMENTATION ==========
-
     @Transactional
     @Override
     public EscalationResult escalateApproval(Long applicationId, EscalationDto dto, User currentUser) {
@@ -3578,34 +3222,23 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
         if (!canUserApproveApplication(application.getId(), user)) {
             return false;
         }
-
         // Check if already escalated recently
         List<ApprovalEscalation> recentEscalations = approvalEscalationRepository
                 .findByLoanApplicationIdOrderByEscalatedAtDesc(application.getId());
-
         if (!recentEscalations.isEmpty()) {
             ApprovalEscalation last = recentEscalations.get(0);
             if (last.getStatus() == ApprovalEscalation.EscalationStatus.PENDING) {
                 return false; // Already pending escalation
             }
         }
-
         return true;
     }
 
     private String determineEscalationTargetRole(LoanApplication application) {
         BigDecimal amount = application.getAppliedAmount();
-
-        if (amount.compareTo(new BigDecimal("10000000")) > 0) {
-            return "SUPER_ADMIN";
-        } else if (amount.compareTo(new BigDecimal("5000000")) > 0) {
-            return "REGIONAL_MANAGER";
-        } else if (amount.compareTo(new BigDecimal("1000000")) > 0) {
-            return "CREDIT_APPROVER";
-        } else {
-            return "BRANCH_MANAGER";
-        }
+        return workflowRules.determineEscalationTargetRole(amount);
     }
+
 
 // ========== HELPER METHODS FOR NOTIFICATIONS ==========
 

@@ -368,6 +368,7 @@ public class LoanRepaymentServiceImpl implements LoanRepaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RepaymentScheduleDto> getRepaymentSchedule(Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));

@@ -18,6 +18,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 public class RepaymentSchedule extends BaseEntity {
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loan_id", nullable = false)
     private Loan loan;

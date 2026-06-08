@@ -90,13 +90,17 @@ app:
       secret: ${JWT_SECRET:defaultDevelopmentSecretKeyForMicrofinance2024ChangeInProduction}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+      mfa-expiration : ${MFA_EXPIRATION:300000}
     rate-limit:
       login-attempts: 5
       window-minutes: 1
+  mfa:
+    issuer: Finite System
 
   system:
-    company-name: "Finite System - Development"
+    company-name: "Finite System"
     default-use-case: "BASIC_KYC"
+
 
   file:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
@@ -110,3 +114,26 @@ app:
   notifications:
     email:
       enabled: ${NOTIFICATIONS_EMAIL_ENABLED:false}
+      from: ${EMAIL_FROM:noreply@microfinance.com}
+    sms:
+      enabled: ${NOTIFICATIONS_SMS_ENABLED:false}
+    push:
+      enabled: ${NOTIFICATIONS_PUSH_ENABLED:false}
+    in-app:
+      enabled: ${NOTIFICATIONS_INAPP_ENABLED:false}
+    file:
+      upload-dir: uploads
+      max-size: 5242880
+      allowed-types: image/jpeg,image/png,image/jpg,application/pdf
+
+  config:
+    compliance:
+      interest-rate-cap:
+      penalty-rate-cap: 25
+      provisioning-requirement: 100
+
+superadmin:
+  approval:
+    bypass:
+      enabled: false
+      min-level: 5

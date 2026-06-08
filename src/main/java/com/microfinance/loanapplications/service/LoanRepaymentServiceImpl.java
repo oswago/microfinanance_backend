@@ -9,6 +9,7 @@ import com.microfinance.base.entity.User;
 import com.microfinance.base.repository.UserRepository;
 import com.microfinance.base.utils.SecurityUtils;
 import com.microfinance.common.config.GeneralConfig;
+import com.microfinance.common.service.NotificationService;
 import com.microfinance.exception.BusinessException;
 import com.microfinance.exception.ResourceNotFoundException;
 import com.microfinance.integrations.service.FinancialIntegrationService;
@@ -59,6 +60,7 @@ public class LoanRepaymentServiceImpl implements LoanRepaymentService {
     private final AuditService auditService;
     @Autowired
     private final SecurityUtils securityUtils;
+    private final NotificationService notificationService;
 
     @Autowired
     private final PaymentAllocationService allocationService;
@@ -134,7 +136,16 @@ public class LoanRepaymentServiceImpl implements LoanRepaymentService {
                     "LOAN_REPAYMENT",
                     "Loan Repayment of ID:"+savedRepayment.getId()+" Loan No:"+savedRepayment.getLoan().getLoanAccountNumber()+  " has been CREATED by:"+createdByName+"-"+createdById
             );
+
+            notificationService.createRepaymentReceivedNotification(
+                    savedRepayment.getLoan().getId(),
+                    savedRepayment.getLoan().getLoanAccountNumber(),
+                    savedRepayment.getAmountPaid(),
+                    savedRepayment.getBorrower().getId()
+
+            );
         }
+
         //End Audit Section
 
 

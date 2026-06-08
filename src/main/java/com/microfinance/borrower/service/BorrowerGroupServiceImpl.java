@@ -8,6 +8,7 @@ import com.microfinance.borrower.repository.BorrowerRepository;
 import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.exception.BusinessException;
 import com.microfinance.exception.ResourceNotFoundException;
+import com.microfinance.loanapplications.repository.LoanRepository;
 import com.microfinance.system.entity.Branch;
 import com.microfinance.system.repository.BranchRepository;
 import com.microfinance.system.service.ActivityLogService;
@@ -21,9 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.microfinance.base.utils.SecurityUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +37,7 @@ import java.util.stream.Collectors;
 public class BorrowerGroupServiceImpl implements BorrowerGroupService {
     
     private final BorrowerGroupRepository groupRepository;
+    private final LoanRepository loanRepository;
     private final BorrowerRepository borrowerRepository;
     private final BranchRepository branchRepository;
     private final ActivityLogService activityLogService;
@@ -57,14 +63,27 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         return groupRepository.searchGroups(search, pageable).map(this::convertToDto);
     }
     
-    @Override
+
     @Transactional(readOnly = true)
-    public BorrowerGroupDto getGroupById(Long id) {
+    public BorrowerGroupDto getGroupByIdORG(Long id) {
         BorrowerGroup group = groupRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
         return convertToDto(group);
     }
-    
+
+    @Override
+    @Transactional(readOnly = true)
+    public BorrowerGroupDto getGroupById(Long id) {
+        log.info("Fetching group by ID: {}", id);
+
+        // Use the method that fetches branch eagerly
+        BorrowerGroup group = groupRepository.findByIdWithBranch(id)
+                .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
+
+        return convertToDtoWithStats(group);
+    }
+
+
     @Override
     @Transactional(readOnly = true)
     public BorrowerGroupDto getGroupByCode(String groupCode) {
@@ -80,15 +99,16 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         if (groupRepository.findByGroupCode(groupDto.getGroupCode()).isPresent()) {
             throw new IllegalArgumentException("Group code already exists: " + groupDto.getGroupCode());
         }
-        
+
         BorrowerGroup group = convertToEntity(groupDto);
-        
+
         // Set branch
         if (groupDto.getBranchId() != null) {
             Branch branch = branchRepository.findById(groupDto.getBranchId())
                     .orElseThrow(() -> new EntityNotFoundException("Branch not found with id: " + groupDto.getBranchId()));
             group.setBranch(branch);
         }
+
         
         group.setCreatedBy(createdBy);
         group.setStatus(GeneralConfig.GroupStatus.ACTIVE);
@@ -154,9 +174,9 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         return convertToDto(updatedGroup);
     }
 
-    @Override
+
     @Transactional(readOnly = true)
-    public List<BorrowerSummaryDto> getGroupMembers(Long groupId) {
+    public List<BorrowerSummaryDto> getGroupMembersORG(Long groupId) {
         BorrowerGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + groupId));
 
@@ -164,6 +184,21 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
                 .map(this::convertBorrowerToDto)
                 .collect(Collectors.toList());
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BorrowerSummaryDto> getGroupMembers(Long groupId) {
+        log.info("Fetching members for group: {}", groupId);
+
+        BorrowerGroup group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + groupId));
+
+        return group.getMembers().stream()
+                .map(this::convertBorrowerToDtoWithStats)
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     @Transactional
@@ -350,25 +385,168 @@ public class BorrowerGroupServiceImpl implements BorrowerGroupService {
         
         return dto;
     }
-    
+
+
+    /**
+     * Convert to DTO with group statistics
+     */
+    private BorrowerGroupDto convertToDtoWithStats(BorrowerGroup group) {
+        Long groupId = group.getId();
+
+        // Get statistics from repository
+        Integer totalMembers = Math.toIntExact(groupRepository.countMembersByGroupId(groupId));
+        Integer activeLoans = groupRepository.countActiveLoansByGroupId(groupId);
+        BigDecimal totalSavings = groupRepository.sumTotalSavingsByGroupId(groupId);
+        BigDecimal repaymentRate = groupRepository.calculateRepaymentRateByGroupId(groupId);
+
+        // Round repayment rate to 2 decimal places
+        if (repaymentRate != null) {
+            repaymentRate = repaymentRate.setScale(2, RoundingMode.HALF_UP);
+        } else {
+            repaymentRate = BigDecimal.ZERO;
+        }
+
+        // Get group leader name
+        AtomicReference<String> groupLeaderName = new AtomicReference<>();
+        if (group.getGroupLeader().getId() != null) {
+            try {
+                // You might need to fetch the borrower by ID
+                // For now, get from members list
+                group.getMembers().stream()
+                        .filter(m -> m.getId().equals(group.getGroupLeader().getId()))
+                        .findFirst()
+                        .ifPresent(leader -> groupLeaderName.set(leader.getFullName()));
+            } catch (Exception e) {
+                log.warn("Could not fetch group leader name for group {}", groupId);
+            }
+        }
+
+        BorrowerGroupDto dto = new BorrowerGroupDto();
+
+        dto.setId(group.getId());
+        dto.setGroupCode(group.getGroupCode());
+        dto.setGroupName(group.getGroupName());
+        dto.setDescription(group.getDescription());
+        dto.setGroupType(group.getGroupType());
+        dto.setStatus(group.getStatus());
+        dto.setMaxMembers(group.getMaxMembers());
+        dto.setMeetingDay(String.valueOf(group.getMeetingDay()));
+        dto.setMeetingTime(group.getMeetingTime());
+        dto.setMeetingFrequency(group.getMeetingFrequency());
+        dto.setMeetingLocation(group.getMeetingLocation());
+        dto.setFormationDate(group.getFormationDate());
+        dto.setJointLiabilityType(group.getJointLiabilityType());
+        dto.setCurrentMemberCount(group.getCurrentMemberCount());
+        dto.setGroupLeaderPhone(group.getGroupLeaderPhone());
+        dto.setGroupLeaderName(String.valueOf(groupLeaderName));
+        dto.setBranchName(group.getBranch() != null ? group.getBranch().getName() : null);
+        dto.setBranchId(group.getBranch() != null ? group.getBranch().getId() : null);
+        dto.setGroupLeaderId(group.getGroupLeader().getId());
+        dto.setCreatedAt(group.getCreatedAt());
+        dto.setUpdatedAt(group.getUpdatedAt());
+                // Statistics fields
+        dto.setTotalMembers(totalMembers);
+        dto.setActiveLoans(activeLoans);
+        dto.setTotalSavings(totalSavings != null ? totalSavings : BigDecimal.ZERO);
+        dto.setRepaymentRate(BigDecimal.valueOf(repaymentRate.doubleValue()));
+
+        return dto;
+    }
+
+    /**
+     * Convert to DTO with member statistics
+     */
+    private BorrowerSummaryDto convertBorrowerToDtoWithStats(Borrower borrower) {
+        // Get member's active loans count
+        Integer activeLoans = 0;
+        BigDecimal totalSavings = BigDecimal.ZERO;
+
+        try {
+            // Count active loans for this borrower
+            activeLoans = loanRepository.countActiveLoansByBorrowerId(borrower.getId());
+            // Get total savings (if you have a savings account concept)
+            // For now, use monthly income * 0.2 as estimated savings
+            if (borrower.getMonthlyIncome() != null) {
+                totalSavings = BigDecimal.valueOf(borrower.getMonthlyIncome());
+            }
+
+        } catch (Exception e) {
+            log.warn("Could not fetch loan/savings data for borrower {}: {}", borrower.getId(), e.getMessage());
+        }
+
+        BorrowerSummaryDto dto = new BorrowerSummaryDto();
+        dto.setId(borrower.getId());
+        dto.setBorrowerNumber(borrower.getBorrowerNumber());
+        dto.setFirstName(borrower.getFirstName());
+        dto.setLastName(borrower.getLastName());
+        dto.setMiddleName(borrower.getMiddleName());
+        dto.setFullName(borrower.getFullName());
+        dto.setPhoneNumber(borrower.getPhoneNumber());
+        dto.setEmail(borrower.getEmail());
+        dto.setStatus(borrower.getStatus());
+        dto.setKycStatus(borrower.getKycStatus());
+        dto.setKycVerifiedAt(borrower.getKycVerifiedAt());
+        dto.setDateOfBirth(borrower.getDateOfBirth());
+        dto.setOccupation(borrower.getOccupation());
+        dto.setMonthlyIncome(borrower.getMonthlyIncome());
+        dto.setIdentificationNumber(borrower.getIdentificationNumber());
+        dto.setCreatedAt(borrower.getCreatedAt());
+
+        if (borrower.getBranch() != null) {
+            dto.setBranchName(borrower.getBranch().getName());
+        }
+
+        if (borrower.getGroup() != null) {
+            dto.setGroupName(borrower.getGroup().getGroupName());
+        }
+        // Set statistics
+        dto.setActiveLoans(activeLoans);
+        dto.setTotalSavings(totalSavings);
+
+        return dto;
+    }
+
+
+
+
     private BorrowerGroup convertToEntity(BorrowerGroupDto dto) {
         BorrowerGroup group = new BorrowerGroup();
+
+        // Required fields - log if null
+        if (dto.getGroupCode() == null) {
+            throw new IllegalArgumentException("Group code cannot be null");
+        }
+        if (dto.getGroupName() == null) {
+            throw new IllegalArgumentException("Group name cannot be null");
+        }
+
         group.setGroupCode(dto.getGroupCode());
         group.setGroupName(dto.getGroupName());
         group.setDescription(dto.getDescription());
-        group.setGroupType(dto.getGroupType());
+        group.setGroupType(dto.getGroupType() != null ? dto.getGroupType() : GeneralConfig.GroupType.COMMUNITY);
         group.setMaxMembers(dto.getMaxMembers());
-        group.setMeetingDay(DayOfWeek.valueOf(dto.getMeetingDay()));
+
+        // Handle meetingDay safely
+        if (dto.getMeetingDay() != null && !dto.getMeetingDay().isEmpty()) {
+            try {
+                group.setMeetingDay(DayOfWeek.valueOf(dto.getMeetingDay().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid meeting day: {}, setting to null", dto.getMeetingDay());
+                group.setMeetingDay(null);
+            }
+        }
+
         group.setMeetingTime(dto.getMeetingTime());
         group.setMeetingFrequency(dto.getMeetingFrequency());
         group.setMeetingLocation(dto.getMeetingLocation());
-        group.setFormationDate(dto.getFormationDate());
+        group.setFormationDate(dto.getFormationDate() != null ? dto.getFormationDate() : LocalDateTime.now());
         group.setJointLiabilityType(dto.getJointLiabilityType());
         group.setGroupLeaderPhone(dto.getGroupLeaderPhone());
+        group.setGroupLeaderName(dto.getGroupLeaderName());
 
-        
         return group;
     }
+
 
 
     private BorrowerSummaryDto convertBorrowerToDto(Borrower borrower) {

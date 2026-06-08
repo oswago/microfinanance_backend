@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class LoanProductController {
 
     @GetMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('BRANCH_MANAGER') or hasRole('LOAN_OFFICER')")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<LoanProductDTO>> getAllLoanProducts() {
         List<LoanProduct> products = loanProductService.getAllActiveLoanProducts();
         List<LoanProductDTO> productDTOs = products.stream()
@@ -106,6 +108,7 @@ public class LoanProductController {
 
     @PostMapping("/{id}/save-as-template")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('BRANCH_MANAGER')")
+    @Transactional
     public ResponseEntity<LoanProductDTO> saveAsTemplate(@PathVariable Long id) {
         LoanProduct template = loanProductService.saveAsTemplate(id);
         return ResponseEntity.ok(LoanProductDTO.fromEntity(template)); // Convert to DTO

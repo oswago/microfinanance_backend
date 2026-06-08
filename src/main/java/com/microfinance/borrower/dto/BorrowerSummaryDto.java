@@ -4,6 +4,7 @@ import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.common.config.GeneralConfig;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -34,4 +35,7 @@ public class BorrowerSummaryDto {
         }
         return firstName + " " + lastName;
     }
+
+    private Integer activeLoans;
+    private BigDecimal totalSavings;
 }

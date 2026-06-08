@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +61,28 @@ public interface BorrowerGroupRepository extends JpaRepository<BorrowerGroup, Lo
 
     @Query("SELECT AVG(SIZE(g.members)) FROM BorrowerGroup g WHERE (:branchId IS NULL OR g.branch.id = :branchId)")
     Double averageGroupSize(@Param("branchId") Long branchId);
+
+    @Query("SELECT DISTINCT g FROM BorrowerGroup g " +
+            "LEFT JOIN FETCH g.branch " +
+            "WHERE g.id = :id")
+    Optional<BorrowerGroup> findByIdWithBranch(@Param("id") Long id);
+
+
+    @Query("SELECT COALESCE(SUM(l.principalAmount), 0) FROM Loan l WHERE l.borrower.group.id = :groupId AND l.status = 'ACTIVE'")
+    BigDecimal sumActiveLoanAmountsByGroupId(@Param("groupId") Long groupId);
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.borrower.group.id = :groupId AND l.status = 'ACTIVE'")
+    Integer countActiveLoansByGroupId(@Param("groupId") Long groupId);
+
+    @Query("SELECT COALESCE(SUM(b.monthlyIncome), 0) FROM Borrower b WHERE b.group.id = :groupId")
+    BigDecimal sumTotalSavingsByGroupId(@Param("groupId") Long groupId);
+
+    @Query("SELECT COALESCE(AVG(CASE WHEN l.status = 'PAID' THEN 100 ELSE " +
+            "CASE WHEN l.daysDelinquent IS NULL OR l.daysDelinquent = 0 THEN 100 " +
+            "ELSE GREATEST(0, 100 - (l.daysDelinquent * 2)) END END), 0) " +
+            "FROM Loan l WHERE l.borrower.group.id = :groupId AND l.status IN ('ACTIVE', 'PAID', 'CLOSED')")
+    BigDecimal calculateRepaymentRateByGroupId(@Param("groupId") Long groupId);
+
 
 
 }

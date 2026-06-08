@@ -21,6 +21,13 @@ public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> 
     
     List<LoanProduct> findByActiveTrue();
     List<LoanProduct> findByActiveTrueAndStatus(GeneralConfig.ProductStatus status);
+
+    @Query("SELECT DISTINCT lp FROM LoanProduct lp " +
+            "LEFT JOIN FETCH lp.productType " +
+            "WHERE lp.active = true AND lp.status = :status")
+    List<LoanProduct> findActiveProductsWithType(@Param("status") GeneralConfig.ProductStatus status);
+
+
     List<LoanProduct> findByStatus(GeneralConfig.ProductStatus status);
     List<LoanProduct> findByIsTemplateTrueAndActiveTrue();
     

@@ -60,7 +60,7 @@ public class NotificationServiceImpl implements NotificationService {
     private String supportEmail;
 
 
-    @Value("${app.company.name:Microfinance System}")
+    @Value("${app.system.company-name:Finite System}")
     private String companyName;
 
     private final InAppNotificationRepository inAppNotificationRepository;
@@ -290,6 +290,8 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+
+
     /**
      * Create in-app notification
      */
@@ -428,7 +430,6 @@ public class NotificationServiceImpl implements NotificationService {
                 .actionLabel("View Details")
                 .createdAt(LocalDateTime.now())
                 .build();
-
         inAppNotificationRepository.save(notification);
     }
 

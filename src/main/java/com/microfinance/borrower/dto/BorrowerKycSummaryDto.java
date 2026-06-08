@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +44,7 @@ public class BorrowerKycSummaryDto {
     private LocalDateTime lastVerificationDate;
     private String verifiedByName;
     private List<String>  documentsRequiredType;
+
 
     // Helper method
     public Boolean getIsKycComplete() {

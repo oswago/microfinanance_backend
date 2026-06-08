@@ -309,6 +309,10 @@ public class ReportServiceImpl implements ReportService {
         
         // Interest Rate Compliance
         BigDecimal averageInterestRate = loanRepository.calculateAverageInterestRateForReport();
+        if (averageInterestRate != null) {
+            averageInterestRate = averageInterestRate.setScale(2, RoundingMode.HALF_UP);
+        }
+
         BigDecimal maxInterestRate = loanRepository.findMaxInterestRateForReport();
         BigDecimal minInterestRate = loanRepository.findMinInterestRateForReport();
 

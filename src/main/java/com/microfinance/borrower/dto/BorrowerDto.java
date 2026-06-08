@@ -76,6 +76,12 @@ public class BorrowerDto {
     private String fullName;
     private String branchName;
     private String groupName;
+
+
+    // Add these fields
+    private String phone;  // Alias for phoneNumber for frontend compatibility
+    private Integer documentsCount;
+    private LocalDateTime createdAt;
     
     private List<BorrowerDocumentDto> documents;
     private List<BorrowerGuarantorDto> guarantors;
@@ -86,4 +92,15 @@ public class BorrowerDto {
         }
         return firstName + " " + lastName;
     }
+
+    // Add getter for phone to return phoneNumber
+    public String getPhone() {
+        return this.phoneNumber;
+    }
+
+    // Setter for phone
+    public void setPhone(String phone) {
+        this.phoneNumber = phone;
+    }
+
 }

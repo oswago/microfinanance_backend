@@ -14,6 +14,7 @@ import com.microfinance.borrower.repository.KycWorkflowStepStatusRepository;
 import com.microfinance.common.config.DocumentConfig;
 import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.common.service.DocumentConfigService;
+import com.microfinance.common.service.NotificationService;
 import com.microfinance.common.util.CommonUtil;
 import com.microfinance.loanproducts.entity.LoanProduct;
 import com.microfinance.loanproducts.repository.LoanProductRepository;
@@ -54,6 +55,7 @@ public class BorrowerDocumentService {
     private final DocumentConfigService documentConfigService;
     private final KycWorkflowService kycWorkflowService;
     private final LoanProductRepository loanProductRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.file.upload-dir:uploads}")
     private String uploadDir;
@@ -289,6 +291,12 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
         BorrowerDocument updatedDocument = documentRepository.save(document);
         log.info("Updated document status to {} for document: {}", status, document.getDocumentName());
 
+        notificationService.createDocumentVerifiedNotification(
+                updatedDocument.getId(),
+                updatedDocument.getDocumentName(),
+                updatedDocument.getBorrower().getId()
+        );
+
         return convertToDto(updatedDocument);
     }
 
@@ -373,6 +381,10 @@ public List<BorrowerDocumentDto> getBorrowerDocuments(Long borrowerId) {
 
                 log.info("Bulk KYC update: Borrower {} status changed from {} to {}",
                         borrowerId, previousStatus, request.getKycStatus().name());
+
+                    notificationService.createKycCompletedNotification(borrowerId);
+
+
 
             } catch (Exception e) {
                 log.error("Failed to update KYC status for borrower {}: {}", borrowerId, e.getMessage());

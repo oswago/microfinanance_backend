@@ -4,12 +4,14 @@ import com.microfinance.base.security.UserPrincipal;
 import com.microfinance.base.utils.SecurityUtils;
 import com.microfinance.common.config.GeneralConfig;
 import com.microfinance.loanproducts.dto.LoanProductCreateRequest;
+import com.microfinance.loanproducts.dto.LoanProductDTO;
 import com.microfinance.loanproducts.dto.LoanProductUpdateRequest;
 import com.microfinance.loanproducts.entity.LoanProduct;
 import com.microfinance.loanproducts.repository.LoanProductRepository;
 import com.microfinance.loanproducttype.entity.ProductType;
 import com.microfinance.loanproducttype.service.ProductTypeService;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,8 +73,10 @@ public class LoanProductService {
         return loanProductRepository.save(product);
     }
 
+    @Transactional(readOnly = true)
     public List<LoanProduct> getAllActiveLoanProducts() {
-        return loanProductRepository.findByActiveTrueAndStatus(GeneralConfig.ProductStatus.ACTIVE);
+        //return loanProductRepository.findByActiveTrueAndStatus(GeneralConfig.ProductStatus.ACTIVE);
+        return loanProductRepository.findActiveProductsWithType(GeneralConfig.ProductStatus.ACTIVE);
     }
 
     public LoanProduct getLoanProductById(Long id) {
@@ -266,6 +270,9 @@ public class LoanProductService {
     public LoanProduct saveAsTemplate(Long id) {
         LoanProduct original = getLoanProductById(id);
 
+        // Initialize lazy-loaded collections before creating a new entity
+        Hibernate.initialize(original.getProductType());
+
         LoanProduct template = new LoanProduct();
         template.setProductCode("TEMPLATE_" + original.getProductCode());
         template.setName(original.getName() + " (Template)");
@@ -295,6 +302,9 @@ public class LoanProductService {
         template.setCreatedBy(getCurrentUserId());
 
         return loanProductRepository.save(template);
+
+
+
     }
 
     public List<LoanProduct> searchLoanProducts(String name, Long productTypeId, GeneralConfig.InterestMethod interestMethod) {

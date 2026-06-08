@@ -10,6 +10,7 @@ import com.microfinance.borrower.entity.Borrower;
 import com.microfinance.borrower.repository.BorrowerRepository;
 import com.microfinance.borrower.service.BorrowerService;
 import com.microfinance.common.config.GeneralConfig;
+import com.microfinance.common.service.NotificationService;
 import com.microfinance.exception.ResourceNotFoundException;
 import com.microfinance.exception.ValidationException;
 import com.microfinance.loanapplications.dto.*;
@@ -52,6 +53,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final SystemService systemService;
     private final SecurityUtils securityUtils;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     private final LoanApplicationEnrichmentService enrichmentService; // Inject the new service
 
@@ -116,7 +118,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         if (Objects.nonNull(savedApplication.getId())) {
             // Build audit message safely
             StringBuilder auditMessage = new StringBuilder()
-                    .append("Loan Application of ID: ").append(savedApplication.getId());
+                    .append("Loan Application Made of ID: ").append(savedApplication.getId());
             // Safe check for loan
             if (savedApplication.getLoan() != null) {
                 auditMessage.append(" Loan No: ").append(savedApplication.getLoan().getLoanAccountNumber());
@@ -131,9 +133,14 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     "LOAN_APPLICATION",
                     auditMessage.toString()
             );
+
+            //Log InAppNotification
+            notificationService.createLoanApplicationSubmittedNotification(
+                    savedApplication.getId(),
+                    savedApplication.getApplicationNumber(),
+                    savedApplication.getBorrower().getId()
+            );
         }
-
-
         //End Audit Section
 
         // Convert to DTO with document references

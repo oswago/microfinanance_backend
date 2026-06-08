@@ -1707,6 +1707,28 @@ public class BorrowerServiceImpl implements BorrowerService {
         dto.setIdentificationNumber(borrower.getIdentificationNumber());
         dto.setNotes(borrower.getNotes());
         dto.setFullName(borrower.getFullName());
+
+        dto.setPhone(borrower.getPhoneNumber()); // For frontend compatibility
+
+        // Timestamps
+        dto.setCreatedAt(borrower.getCreatedAt());
+       // dto.setUpdatedAt(borrower.getUpdatedAt());
+
+        // Branch Information
+        if (borrower.getBranch() != null) {
+            dto.setBranchId(borrower.getBranch().getId());
+            dto.setBranchName(borrower.getBranch().getName());
+        }
+
+        // Group Information
+        if (borrower.getGroup() != null) {
+            dto.setGroupId(borrower.getGroup().getId());
+            dto.setGroupName(borrower.getGroup().getGroupName());
+        }
+
+        // Document Count
+        dto.setDocumentsCount(getDocumentCountForBorrower(borrower.getId()));
+
         
         if (borrower.getBranch() != null) {
             dto.setBranchId(borrower.getBranch().getId());
@@ -2207,6 +2229,20 @@ public class BorrowerServiceImpl implements BorrowerService {
             log.error("Failed to send bulk KYC notifications: {}", e.getMessage());
         }
     }
+
+
+    // BorrowerService.java - Add this method
+    private int getDocumentCountForBorrower(Long borrowerId) {
+        try {
+            // If you have a document repository, use it
+             List<BorrowerDocument> documents = borrowerDocumentRepository.findByBorrowerId(borrowerId);
+             return documents.size();
+        } catch (Exception e) {
+            log.warn("Could not fetch document count for borrower {}: {}", borrowerId, e.getMessage());
+            return 0;
+        }
+    }
+
 
     @Override
     @Transactional(readOnly = true)

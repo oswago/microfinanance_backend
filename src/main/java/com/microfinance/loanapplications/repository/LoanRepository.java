@@ -960,6 +960,11 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     Long countDistinctBorrowersByStatus(@Param("status") GeneralConfig.LoanStatus status, @Param("branchId") Long branchId);
 
 
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.borrower.id = :borrowerId AND l.status = 'ACTIVE'")
+    Integer countActiveLoansByBorrowerId(@Param("borrowerId") Long borrowerId);
+
+    @Query("SELECT COALESCE(SUM(l.outstandingBalance), 0) FROM Loan l WHERE l.borrower.id = :borrowerId AND l.status = 'ACTIVE'")
+    BigDecimal sumOutstandingBalanceByBorrowerId(@Param("borrowerId") Long borrowerId);
 
 
 }

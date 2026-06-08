@@ -16,6 +16,7 @@ import com.microfinance.audit.service.AuditService;
 import com.microfinance.audit.service.AuditServiceImpl;
 import com.microfinance.base.repository.UserRepository;
 import com.microfinance.base.utils.SecurityUtils;
+import com.microfinance.common.service.NotificationService;
 import com.microfinance.integrations.service.FinancialIntegrationService;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -78,6 +79,7 @@ public class LoanDisbursementServiceImpl implements LoanDisbursementService {
     private final FinancialIntegrationService financialIntegrationService;
     @Autowired
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     private final RepaymentScheduleGenerationService scheduleGenerationService;
 
@@ -153,9 +155,22 @@ public class LoanDisbursementServiceImpl implements LoanDisbursementService {
                 );
             }
             //End Audit Section
-
             financialIntegrationService.recordLoanDisbursement(loan, loan.getNetDisbursementAmount(), currentUser);
+
+            //Send Disrbursement Notification Email
+            notificationService.sendDisbursementNotification(
+                    savedLoan.getBorrower().getEmail(),
+                    savedLoan.getLoanAccountNumber(),
+                    savedLoan.getNetDisbursementAmount()
+                    );
+            //InApp Notification
+            notificationService.createLoanDisbursedNotification(
+              savedLoan.getId(),
+              savedLoan.getLoanAccountNumber(),
+              savedLoan.getBorrower().getId()
+            );
         }
+
 
         return loanMapper.toDto(savedLoan);
     }

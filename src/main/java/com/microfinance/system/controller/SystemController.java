@@ -4,6 +4,7 @@ import com.microfinance.system.dto.BranchRequest;
 import com.microfinance.system.dto.BranchResponse;
 import com.microfinance.system.entity.*;
 import com.microfinance.system.service.SystemService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -72,6 +73,16 @@ public class SystemController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<CurrencySettings> updateCurrency(@PathVariable String code, @RequestBody CurrencySettings currency) {
         return ResponseEntity.ok(systemService.updateCurrency(code, currency));
+    }
+
+    // In SystemController.java
+    @PatchMapping("/currencies/{currencyCode}/set-default")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Operation(summary = "Set a currency as default")
+    public ResponseEntity<Void> setDefaultCurrency(@PathVariable String currencyCode) {
+        //log.info("Setting default currency: {}", currencyCode);
+        systemService.setDefaultCurrency(currencyCode);
+        return ResponseEntity.ok().build();
     }
     
     // Holiday Management

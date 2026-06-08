@@ -4,12 +4,13 @@ import com.microfinance.borrower.entity.BorrowerGroup;
 import com.microfinance.common.config.GeneralConfig;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-
 @Data
 public class BorrowerGroupDto {
     private Long id;
@@ -37,12 +38,19 @@ public class BorrowerGroupDto {
     private String groupLeaderName;
     private String groupLeaderPhone;
     private BorrowerSummaryDto groupLeader;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     
     // Read-only fields
     private GeneralConfig.GroupStatus status;
     private Integer currentMemberCount;
     private String branchName;
     private List<BorrowerDto> members;
+
+    private Integer totalMembers;
+    private Integer activeLoans;
+    private BigDecimal totalSavings;
+    private BigDecimal repaymentRate;
 
 
 }

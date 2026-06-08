@@ -209,6 +209,16 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                         "APPLICATION_APPROVAL",
                         auditMessage.toString()
                 );
+               //InAppNotification
+                if(isFinalApproval){
+                    notificationService.createLoanApprovedNotification(
+                            applicationId,
+                            application.getApplicationNumber(),
+                            approver.getId(),
+                            application.getBorrower().getId()
+                    );
+                }
+
             }
             //End Audit Section
 
@@ -329,6 +339,14 @@ public class LoanApprovalServiceImpl implements LoanApprovalService {
                         "Loan Application of ID:"+savedApp.getId()+" Loan No:"+savedApp.getLoan().getLoanAccountNumber()+  " has been REJECTED by:"+createdByName+"-"+createdById
                 );
             }
+               //IanAppnotification
+                notificationService.createLoanRejectedNotification(
+                        applicationId,
+                        application.getApplicationNumber(),
+                        dto.getComments(),
+                        application.getBorrower().getId()
+                );
+
             //End Audit Section
 
             log.info("Application {} rejected successfully by {}", applicationId, approver.getUsername());

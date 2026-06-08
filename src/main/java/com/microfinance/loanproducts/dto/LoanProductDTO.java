@@ -91,6 +91,7 @@ public class LoanProductDTO {
         dto.setActive(product.getActive());
         dto.setCreatedAt(product.getCreatedAt());
         dto.setUpdatedAt(product.getUpdatedAt());
+        dto.setProductType(ProductTypeDTO.fromEntity(product.getProductType()));
 
         // Add these if they exist in your entity
         dto.setCreatedBy(product.getCreatedBy());
